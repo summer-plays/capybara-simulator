@@ -1077,8 +1077,6 @@
                 }
             }
 
-            // Dev test: ramp mcap from $900K → $1M over 10s to preview standing FX
-            // Call from console: game.testStand()
             testStand() {
                 this._testLock = true; // freeze WS updates during test
                 this._marketCap = 900_000;
