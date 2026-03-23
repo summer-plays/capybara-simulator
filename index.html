@@ -163,7 +163,7 @@
                 this.models = {};
                 this.loadedCount = 0;
                 this.totalModels = 0; // set dynamically in loadModels()
-                this._instancedFlowers = null;
+                this._flowerInstancedMeshes = [];
                 this.capybara = null;
                 this.mixer = null;
 
@@ -368,47 +368,21 @@
                 return wrapper;
             }
 
-            // 500 individual clones → 1 InstancedMesh draw call, wind lives in vertex shader
+            // Instance ALL meshes from flower.glb (petals + stems), GPU wind in vertex shader
             _buildFlowerInstances() {
-                let srcMesh = null;
+                // Collect all meshes from the flower model
+                const srcMeshes = [];
                 this.models['flower'].traverse(c => {
-                    if (c.isMesh && c.material && c.material.name === 'Flowers' && !srcMesh) srcMesh = c;
+                    if (c.isMesh && c.material) srcMeshes.push(c);
                 });
-                if (!srcMesh) return;
+                if (srcMeshes.length === 0) return;
 
-                const geo = srcMesh.geometry.clone();
-                const localMat = new THREE.Matrix4().compose(srcMesh.position, srcMesh.quaternion, srcMesh.scale);
-                geo.applyMatrix4(localMat);
-
-                const mat = srcMesh.material.clone();
-                mat.map = null;
-                mat.color.set(0xc4a0e0);
-                mat.userData.uniforms = { windTime: { value: 0 } };
-                mat.onBeforeCompile = (shader) => {
-                    shader.uniforms.windTime = mat.userData.uniforms.windTime;
-                    shader.vertexShader = `
-                        attribute float aWindPhase;
-                        attribute float aWindStrength;
-                        uniform float windTime;
-                    ` + shader.vertexShader.replace(
-                        '#include <begin_vertex>',
-                        `#include <begin_vertex>
-                        float wX = sin(windTime * 1.5 + aWindPhase) * aWindStrength;
-                        float wZ = sin(windTime * 1.2 + aWindPhase * 0.7) * aWindStrength * 0.6;
-                        transformed.x += transformed.y * wX;
-                        transformed.z += transformed.y * wZ;`
-                    );
-                };
-
+                // Pre-compute placement positions (shared across all mesh parts)
                 const COUNT = 400;
-                const mesh = new THREE.InstancedMesh(geo, mat, COUNT);
-                mesh.castShadow = false;
-                mesh.receiveShadow = false;
-                mesh.frustumCulled = false;
-
+                const dummy = new THREE.Object3D();
+                const matrices = [];
                 const windPhases    = new Float32Array(COUNT);
                 const windStrengths = new Float32Array(COUNT);
-                const dummy = new THREE.Object3D();
                 let idx = 0;
                 const clusters = [[0,0],[-4,2],[5,-1],[-2,-3],[3,4],[-6,-2],[7,2],[-3,5],[1,-5],[6,-4]];
 
@@ -423,17 +397,58 @@
                     dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
                     dummy.scale.setScalar(scale);
                     dummy.updateMatrix();
-                    mesh.setMatrixAt(idx, dummy.matrix);
+                    matrices.push(dummy.matrix.clone());
                     windPhases[idx]    = Math.random() * Math.PI * 2;
                     windStrengths[idx] = 0.06 + Math.random() * 0.05;
                     idx++;
                 }
-                mesh.count = idx;
-                mesh.instanceMatrix.needsUpdate = true;
-                geo.setAttribute('aWindPhase',    new THREE.InstancedBufferAttribute(windPhases.slice(0, idx), 1));
-                geo.setAttribute('aWindStrength', new THREE.InstancedBufferAttribute(windStrengths.slice(0, idx), 1));
-                this.scene.add(mesh);
-                this._instancedFlowers = mesh;
+
+                this._flowerInstancedMeshes = [];
+                const wpSlice = windPhases.slice(0, idx);
+                const wsSlice = windStrengths.slice(0, idx);
+
+                for (const srcMesh of srcMeshes) {
+                    const geo = srcMesh.geometry.clone();
+                    const localMat = new THREE.Matrix4().compose(srcMesh.position, srcMesh.quaternion, srcMesh.scale);
+                    geo.applyMatrix4(localMat);
+
+                    const mat = srcMesh.material.clone();
+                    // Recolor petals to lavender
+                    if (mat.name === 'Flowers') {
+                        mat.map = null;
+                        mat.color.set(0xc4a0e0);
+                    }
+                    mat.userData.uniforms = { windTime: { value: 0 } };
+                    mat.onBeforeCompile = (shader) => {
+                        shader.uniforms.windTime = mat.userData.uniforms.windTime;
+                        shader.vertexShader = `
+                            attribute float aWindPhase;
+                            attribute float aWindStrength;
+                            uniform float windTime;
+                        ` + shader.vertexShader.replace(
+                            '#include <begin_vertex>',
+                            `#include <begin_vertex>
+                            float wX = sin(windTime * 1.5 + aWindPhase) * aWindStrength;
+                            float wZ = sin(windTime * 1.2 + aWindPhase * 0.7) * aWindStrength * 0.6;
+                            transformed.x += transformed.y * wX;
+                            transformed.z += transformed.y * wZ;`
+                        );
+                    };
+
+                    const mesh = new THREE.InstancedMesh(geo, mat, idx);
+                    mesh.castShadow = false;
+                    mesh.receiveShadow = false;
+                    mesh.frustumCulled = false;
+
+                    for (let i = 0; i < idx; i++) {
+                        mesh.setMatrixAt(i, matrices[i]);
+                    }
+                    mesh.instanceMatrix.needsUpdate = true;
+                    geo.setAttribute('aWindPhase',    new THREE.InstancedBufferAttribute(wpSlice.slice(), 1));
+                    geo.setAttribute('aWindStrength', new THREE.InstancedBufferAttribute(wsSlice.slice(), 1));
+                    this.scene.add(mesh);
+                    this._flowerInstancedMeshes.push(mesh);
+                }
             }
 
             // Terrain: foreground SAME LEVEL as pond, small bump behind
@@ -1016,8 +1031,9 @@
                         void main() {
                             float y = mod(aSeedY * 26.0 - time * aSpeed, 27.0) - 2.0;
                             vec3 wp = vec3(camPos.x + aXZOffset.x, y, camPos.z + aXZOffset.y);
-                            gl_Position  = projectionMatrix * viewMatrix * vec4(wp, 1.0);
-                            gl_PointSize = 3.0;
+                            vec4 mvPos = viewMatrix * vec4(wp, 1.0);
+                            gl_Position  = projectionMatrix * mvPos;
+                            gl_PointSize = 600.0 / -mvPos.z;
                             vAlpha = opacity;
                         }
                     `,
@@ -1522,8 +1538,8 @@
                         .multiply(this._hatCorrectionQuat);
                 }
 
-                if (this._instancedFlowers) {
-                    this._instancedFlowers.material.userData.uniforms.windTime.value = time;
+                for (const fm of this._flowerInstancedMeshes) {
+                    fm.material.userData.uniforms.windTime.value = time;
                 }
 
                 // Weather transitions
