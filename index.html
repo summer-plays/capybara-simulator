@@ -33,8 +33,8 @@
             #points { font-size: 12px; padding: 3px 10px; }
             #points span { font-size: 14px; }
             #music-controls { gap: 5px; }
-            #music-controls button { font-size: 10px; padding: 3px 8px; }
-            #vol-slider, #rain-vol-slider { width: 40px; }
+            #music-controls button { width: 30px; height: 30px; }
+            #music-controls button svg { width: 14px; height: 14px; }
         }
         #points {
             font-size: 15px; font-weight: 300; letter-spacing: 1.5px;
@@ -55,32 +55,24 @@
             background: rgba(255,255,255,0.15);
             border: 1px solid rgba(255,255,255,0.2);
             color: rgba(255,255,255,0.7);
-            border-radius: 20px;
-            padding: 5px 12px;
-            font-family: 'Quicksand', sans-serif;
-            font-size: 11px; font-weight: 400;
+            border-radius: 50%;
+            width: 36px; height: 36px;
+            padding: 0;
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer;
             backdrop-filter: blur(8px);
             transition: all 0.2s;
-            letter-spacing: 0.5px;
         }
         #music-controls button:hover {
             background: rgba(255,255,255,0.25);
             color: rgba(255,255,255,0.9);
         }
-        #vol-slider, #rain-vol-slider {
-            -webkit-appearance: none; appearance: none;
-            width: 60px; height: 3px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px; outline: none;
-            cursor: pointer;
+        #music-controls button svg {
+            width: 18px; height: 18px;
+            stroke: currentColor; fill: none;
+            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
         }
-        #vol-slider::-webkit-slider-thumb, #rain-vol-slider::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none;
-            width: 10px; height: 10px;
-            background: rgba(255,255,255,0.6);
-            border-radius: 50%; cursor: pointer;
-        }
+        #btn-rain.active { background: rgba(255,255,255,0.3); color: rgba(255,255,255,0.95); }
     </style>
     <meta name="x-pf-key" content="9cr2tMejZArKSAw1JAvQMmQBRVKwNCvBbLPRNAzBgYZV" />
     <script src="https://sdk.play.fun/latest"></script>
@@ -98,10 +90,9 @@
     <div id="hud" style="display:none;">
         <div id="points"><span id="score">0</span> vibes</div>
         <div id="music-controls">
-            <button id="btn-skip">skip</button>
-            <input type="range" id="vol-slider" min="0" max="100" value="30">
-            <button id="btn-rain">rain</button>
-            <input type="range" id="rain-vol-slider" min="0" max="100" value="40" style="display:none">
+            <button id="btn-skip" title="Skip track"><svg viewBox="0 0 24 24"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+            <button id="btn-mute" title="Mute/Unmute"><svg viewBox="0 0 24 24"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></button>
+            <button id="btn-rain" title="Toggle rain"><svg viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><line x1="8" y1="16" x2="8" y2="20"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="16" y1="16" x2="16" y2="20"/></svg></button>
         </div>
     </div>
     <div id="loading">
@@ -912,9 +903,23 @@
                     if (wasPlaying) this.audio.play().catch(() => {});
                 });
 
-                // Volume slider
-                document.getElementById('vol-slider').addEventListener('input', (e) => {
-                    this.audio.volume = e.target.value / 100;
+                // Mute toggle
+                this._muted = false;
+                this._savedVolume = this.audio.volume;
+                document.getElementById('btn-mute').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._muted = !this._muted;
+                    if (this._muted) {
+                        this._savedVolume = this.audio.volume;
+                        this.audio.volume = 0;
+                        if (this._rainAudio) this._rainAudio.volume = 0;
+                        if (this._thunderAudio) this._thunderAudio.volume = 0;
+                    } else {
+                        this.audio.volume = this._savedVolume;
+                    }
+                    document.getElementById('btn-mute').innerHTML = this._muted
+                        ? '<svg viewBox="0 0 24 24"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>'
+                        : '<svg viewBox="0 0 24 24"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>';
                 });
             }
 
@@ -1062,11 +1067,6 @@
                     this.toggleRain();
                 });
 
-                // Rain volume slider
-                document.getElementById('rain-vol-slider').addEventListener('input', (e) => {
-                    e.stopPropagation();
-                    this._rainUserVol = e.target.value / 100;
-                });
             }
 
             toggleRain() {
@@ -1075,8 +1075,7 @@
                 if (goingRainy) {
                     this._rainAudio.play().catch(() => {});
                 }
-                document.getElementById('btn-rain').textContent = goingRainy ? 'sunny' : 'rain';
-                document.getElementById('rain-vol-slider').style.display = goingRainy ? '' : 'none';
+                document.getElementById('btn-rain').classList.toggle('active', goingRainy);
             }
 
             _updateWeather(delta, time) {
@@ -1113,7 +1112,7 @@
 
                 // Rain audio volume (user-controlled max, fades with weather)
                 if (this._rainAudio) {
-                    this._rainAudio.volume = t * (this._rainUserVol || 0.4);
+                    this._rainAudio.volume = this._muted ? 0 : t * (this._rainUserVol || 0.4);
                     if (t === 0 && !this._rainAudio.paused) this._rainAudio.pause();
                 }
             }
@@ -1457,7 +1456,7 @@
 
                 // Thunder audio
                 if (this._thunderAudio) {
-                    this._thunderAudio.volume = t * 0.75;
+                    this._thunderAudio.volume = this._muted ? 0 : t * 0.75;
                     if (t === 0 && !this._thunderAudio.paused) this._thunderAudio.pause();
                 }
                 // Halo point light
