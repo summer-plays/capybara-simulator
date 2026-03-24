@@ -355,6 +355,7 @@
                 this._coinInterval = 0.8;
                 this._spawnZ = -60;
                 this._despawnZ = 10;
+                this._distAccum = 0;
 
                 // Scene setup
                 this._scene = new THREE.Scene();
@@ -706,8 +707,12 @@
                     }
                 }
 
-                // Distance score (1 point per frame ≈ distance traveled)
-                this._score += 1;
+                // Distance score based on actual distance traveled (frame-rate independent)
+                this._distAccum += scrollDist;
+                while (this._distAccum >= 1) {
+                    this._score += 1;
+                    this._distAccum -= 1;
+                }
                 document.getElementById('walkies-score-val').textContent = this._score;
             }
 
@@ -736,6 +741,7 @@
                 this._jumping = false;
                 this._obstacleTimer = 0;
                 this._coinTimer = 0;
+                this._distAccum = 0;
                 this._gameOver = false;
 
                 if (this._capyMesh) this._capyMesh.position.y = this._groundY;
