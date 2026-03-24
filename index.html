@@ -164,6 +164,81 @@
             #play-menu { bottom: 64px; gap: 8px; }
             .game-item { width: 80px; height: 80px; font-size: 11px; }
         }
+
+        /* ── WALKIES GAME HUD ── */
+        #walkies-hud {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 60; pointer-events: none; display: none;
+        }
+        #walkies-hud.active { display: block; }
+        #walkies-score {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            font-size: 22px; font-weight: 500; letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 6px 20px;
+            backdrop-filter: blur(8px);
+            font-family: 'Quicksand', sans-serif;
+        }
+        #walkies-score span { font-weight: 600; }
+        #walkies-back {
+            position: absolute; top: 20px; left: 20px;
+            pointer-events: all; cursor: pointer;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.8);
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 13px; font-weight: 500;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+        }
+        #walkies-back:hover { background: rgba(255,255,255,0.28); color: rgba(255,255,255,0.95); }
+        #walkies-gameover {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; display: none;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 30px 40px;
+            backdrop-filter: blur(12px);
+            font-family: 'Quicksand', sans-serif;
+            color: rgba(255,255,255,0.9);
+        }
+        #walkies-gameover.visible { display: block; }
+        #walkies-gameover h2 { font-size: 28px; font-weight: 500; margin-bottom: 8px; }
+        #walkies-gameover .final-score { font-size: 18px; margin-bottom: 20px; opacity: 0.8; }
+        #walkies-gameover button {
+            pointer-events: all; cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.9);
+            border-radius: 16px;
+            padding: 10px 24px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 14px; font-weight: 500;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+            margin: 0 6px;
+        }
+        #walkies-gameover button:hover { background: rgba(255,255,255,0.35); }
+        #walkies-tap-hint {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            font-size: 13px; font-weight: 400;
+            color: rgba(255,255,255,0.5);
+            font-family: 'Quicksand', sans-serif;
+            letter-spacing: 1px;
+        }
+        @media (max-width: 600px) {
+            #walkies-score { font-size: 16px; padding: 4px 14px; top: 14px; }
+            #walkies-back { top: 14px; left: 12px; padding: 6px 12px; font-size: 11px; }
+            #walkies-gameover { padding: 20px 28px; }
+            #walkies-gameover h2 { font-size: 22px; }
+        }
     </style>
     <meta name="x-pf-key" content="9cr2tMejZArKSAw1JAvQMmQBRVKwNCvBbLPRNAzBgYZV" />
     <script src="https://sdk.play.fun/latest"></script>
@@ -210,6 +285,17 @@
         <button class="game-item" data-game="cap-o-fetch">Cap-o-Fetch</button>
         <button class="game-item" data-game="bath-time">Bath Time</button>
     </div>
+    <div id="walkies-hud">
+        <button id="walkies-back">← Back</button>
+        <div id="walkies-score">🪙 <span id="walkies-score-val">0</span></div>
+        <div id="walkies-tap-hint">Tap or Space to jump</div>
+        <div id="walkies-gameover">
+            <h2>Game Over!</h2>
+            <div class="final-score">Score: <span id="walkies-final-score">0</span></div>
+            <button id="walkies-retry">Play Again</button>
+            <button id="walkies-quit">Back</button>
+        </div>
+    </div>
     <div id="loading">
         <div class="title">Capybara Simulator</div>
         <div class="bar"><div class="fill" id="loadBar"></div></div>
@@ -229,6 +315,454 @@
         // flower: 0.91x2.07x0.88 (single flower ~2m tall at scale 1)
         // rocks: 7.28x2.15x1.32 (rock cluster, wide and flat)
         // rock2: 3.42x2.32x3.48 (single rock)
+
+        /* ═══════════════════════════════════════════════════════════
+           WALKIES — Endless Runner Mini-Game
+           ═══════════════════════════════════════════════════════════ */
+        class WalkiesGame {
+            constructor(renderer, onExit) {
+                this._renderer = renderer;
+                this._onExit = onExit;
+                this._clock = new THREE.Clock();
+                this._running = false;
+                this._gameOver = false;
+                this._score = 0;
+                this._speed = 8;           // world scroll speed (units/sec)
+                this._speedAccel = 0.15;   // speed increase per second
+
+                // Capybara (player)
+                this._capyY = 0;
+                this._capyVY = 0;
+                this._jumping = false;
+                this._gravity = -28;
+                this._jumpForce = 12;
+                this._capyMesh = null;
+                this._capyMixer = null;
+                this._capyRunAction = null;
+
+                // Lanes / ground
+                this._groundY = 0;
+                this._laneWidth = 2.5;
+
+                // Obstacles & coins
+                this._obstacles = [];
+                this._coins = [];
+                this._groundTiles = [];
+                this._trees = [];
+                this._obstacleTimer = 0;
+                this._coinTimer = 0;
+                this._obstacleInterval = 1.4;
+                this._coinInterval = 0.8;
+                this._spawnZ = -60;
+                this._despawnZ = 10;
+                this._distAccum = 0;
+
+                // Scene setup
+                this._scene = new THREE.Scene();
+                this._scene.background = new THREE.Color(0x87CEEB);
+                this._scene.fog = new THREE.Fog(0x87CEEB, 30, 70);
+
+                this._camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+                this._camera.position.set(0, 3.5, 8);
+                this._camera.lookAt(0, 1, -5);
+
+                this._setupLighting();
+                this._buildScene();
+                this._loadCapybara();
+                this._bindInput();
+                this._showHUD();
+            }
+
+            _setupLighting() {
+                const hemi = new THREE.HemisphereLight(0x99ccff, 0x337733, 0.9);
+                this._scene.add(hemi);
+
+                const sun = new THREE.DirectionalLight(0xfff4d6, 1.0);
+                sun.position.set(5, 15, 10);
+                sun.castShadow = true;
+                sun.shadow.mapSize.set(512, 512);
+                sun.shadow.camera.left = -15;
+                sun.shadow.camera.right = 15;
+                sun.shadow.camera.top = 15;
+                sun.shadow.camera.bottom = -15;
+                this._scene.add(sun);
+
+                const ambient = new THREE.AmbientLight(0x607060, 0.5);
+                this._scene.add(ambient);
+            }
+
+            _buildScene() {
+                // Ground — long repeating tiles
+                const groundGeo = new THREE.PlaneGeometry(8, 80);
+                const groundMat = new THREE.MeshLambertMaterial({ color: 0x5a9e4b });
+                for (let i = 0; i < 3; i++) {
+                    const tile = new THREE.Mesh(groundGeo, groundMat);
+                    tile.rotation.x = -Math.PI / 2;
+                    tile.position.set(0, -0.01, -i * 80 + 40);
+                    tile.receiveShadow = true;
+                    this._scene.add(tile);
+                    this._groundTiles.push(tile);
+                }
+
+                // Path / road strip
+                const pathGeo = new THREE.PlaneGeometry(3, 80);
+                const pathMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+                this._pathTiles = [];
+                for (let i = 0; i < 3; i++) {
+                    const path = new THREE.Mesh(pathGeo, pathMat);
+                    path.rotation.x = -Math.PI / 2;
+                    path.position.set(0, 0, -i * 80 + 40);
+                    path.receiveShadow = true;
+                    this._scene.add(path);
+                    this._pathTiles.push(path);
+                }
+
+                // Decorative side trees
+                const trunkGeo = new THREE.CylinderGeometry(0.15, 0.2, 2, 6);
+                const trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
+                const leafGeo = new THREE.SphereGeometry(0.9, 6, 5);
+                const leafMat = new THREE.MeshLambertMaterial({ color: 0x2d8a2d });
+                for (let z = 0; z > -120; z -= 8) {
+                    for (const xSide of [-3.5, 3.5]) {
+                        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                        trunk.position.set(xSide + (Math.random() - 0.5) * 0.5, 1, z + (Math.random() - 0.5) * 2);
+                        this._scene.add(trunk);
+                        this._trees.push(trunk);
+
+                        const leaves = new THREE.Mesh(leafGeo, leafMat);
+                        leaves.position.set(trunk.position.x, 2.3, trunk.position.z);
+                        leaves.scale.setScalar(0.7 + Math.random() * 0.4);
+                        this._scene.add(leaves);
+                        this._trees.push(leaves);
+                    }
+                }
+            }
+
+            _loadCapybara() {
+                const loader = new GLTFLoader();
+                loader.load('models/capybara-rigged.glb', (gltf) => {
+                    this._capyMesh = gltf.scene;
+                    this._capyMesh.scale.setScalar(1);
+                    this._capyMesh.position.set(0, this._groundY, 0);
+                    this._capyMesh.rotation.y = Math.PI; // face away from camera (forward = -Z)
+                    this._capyMesh.traverse(c => { if (c.isMesh) { c.castShadow = true; } });
+                    this._scene.add(this._capyMesh);
+
+                    // Play walk animation if available
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        this._capyMixer = new THREE.AnimationMixer(this._capyMesh);
+                        this._capyRunAction = this._capyMixer.clipAction(gltf.animations[0]);
+                        this._capyRunAction.play();
+                        this._capyRunAction.timeScale = 1.5;
+                    }
+
+                    this._running = true;
+                    this._clock.start();
+                }, undefined, () => {
+                    // Fallback: simple box capybara
+                    this._createFallbackCapybara();
+                    this._running = true;
+                    this._clock.start();
+                });
+            }
+
+            _createFallbackCapybara() {
+                const group = new THREE.Group();
+                // Body
+                const bodyGeo = new THREE.BoxGeometry(0.8, 0.6, 1.2);
+                const bodyMat = new THREE.MeshLambertMaterial({ color: 0x8B6914 });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.5;
+                body.castShadow = true;
+                group.add(body);
+                // Head
+                const headGeo = new THREE.BoxGeometry(0.5, 0.45, 0.5);
+                const head = new THREE.Mesh(headGeo, bodyMat);
+                head.position.set(0, 0.8, -0.5);
+                head.castShadow = true;
+                group.add(head);
+                // Eyes
+                const eyeGeo = new THREE.SphereGeometry(0.06, 6, 6);
+                const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+                const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+                eyeL.position.set(-0.15, 0.85, -0.74);
+                group.add(eyeL);
+                const eyeR = eyeL.clone();
+                eyeR.position.x = 0.15;
+                group.add(eyeR);
+
+                group.position.set(0, this._groundY, 0);
+                this._capyMesh = group;
+                this._scene.add(group);
+            }
+
+            _bindInput() {
+                this._onKeyDown = (e) => {
+                    if (e.code === 'Space' || e.code === 'ArrowUp') {
+                        e.preventDefault();
+                        this._jump();
+                    }
+                };
+                this._onTouchStart = (e) => {
+                    // Don't jump if tapping HUD buttons
+                    if (e.target.closest('#walkies-hud button, #walkies-gameover button')) return;
+                    this._jump();
+                };
+                this._onMouseDown = (e) => {
+                    if (e.target.closest('#walkies-hud button, #walkies-gameover button')) return;
+                    this._jump();
+                };
+                window.addEventListener('keydown', this._onKeyDown);
+                window.addEventListener('touchstart', this._onTouchStart, { passive: true });
+                window.addEventListener('mousedown', this._onMouseDown);
+
+                // HUD buttons
+                document.getElementById('walkies-back').addEventListener('click', () => this.exit());
+                document.getElementById('walkies-retry').addEventListener('click', () => this.restart());
+                document.getElementById('walkies-quit').addEventListener('click', () => this.exit());
+            }
+
+            _unbindInput() {
+                window.removeEventListener('keydown', this._onKeyDown);
+                window.removeEventListener('touchstart', this._onTouchStart);
+                window.removeEventListener('mousedown', this._onMouseDown);
+            }
+
+            _showHUD() {
+                document.getElementById('walkies-hud').classList.add('active');
+                document.getElementById('walkies-gameover').classList.remove('visible');
+                document.getElementById('walkies-score-val').textContent = '0';
+            }
+
+            _jump() {
+                if (this._gameOver) return;
+                if (!this._jumping) {
+                    this._jumping = true;
+                    this._capyVY = this._jumpForce;
+                }
+            }
+
+            _spawnObstacle() {
+                // Red spiked ball obstacle
+                const geo = new THREE.SphereGeometry(0.4, 8, 6);
+                const mat = new THREE.MeshLambertMaterial({ color: 0xe74c3c });
+                const obs = new THREE.Mesh(geo, mat);
+                // Random x position within path
+                obs.position.set((Math.random() - 0.5) * 2, 0.4, this._spawnZ);
+                obs.castShadow = true;
+
+                // Add spikes
+                const spikeGeo = new THREE.ConeGeometry(0.1, 0.3, 4);
+                const spikeMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
+                for (let i = 0; i < 6; i++) {
+                    const spike = new THREE.Mesh(spikeGeo, spikeMat);
+                    const phi = Math.random() * Math.PI;
+                    const theta = Math.random() * Math.PI * 2;
+                    spike.position.set(
+                        Math.sin(phi) * Math.cos(theta) * 0.4,
+                        Math.sin(phi) * Math.sin(theta) * 0.4,
+                        Math.cos(phi) * 0.4
+                    );
+                    spike.lookAt(spike.position.clone().multiplyScalar(2));
+                    obs.add(spike);
+                }
+
+                this._scene.add(obs);
+                this._obstacles.push(obs);
+            }
+
+            _spawnCoin() {
+                const geo = new THREE.CylinderGeometry(0.25, 0.25, 0.06, 16);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.7, roughness: 0.2 });
+                const coin = new THREE.Mesh(geo, mat);
+                coin.rotation.x = Math.PI / 2;
+                // Random x position within path, sometimes floating
+                const xPos = (Math.random() - 0.5) * 2;
+                const yPos = 0.5 + Math.random() * 1.5;
+                coin.position.set(xPos, yPos, this._spawnZ - Math.random() * 10);
+                coin.castShadow = true;
+                this._scene.add(coin);
+                this._coins.push(coin);
+            }
+
+            update() {
+                if (!this._running || this._gameOver) return;
+
+                const delta = this._clock.getDelta();
+                const time = this._clock.elapsedTime;
+
+                // Increase speed over time
+                this._speed += this._speedAccel * delta;
+
+                // Update capybara animation
+                if (this._capyMixer) {
+                    this._capyMixer.update(delta);
+                    if (this._capyRunAction) {
+                        this._capyRunAction.timeScale = 1.5 + (this._speed - 8) * 0.1;
+                    }
+                }
+
+                // Jump physics
+                if (this._jumping) {
+                    this._capyVY += this._gravity * delta;
+                    this._capyY += this._capyVY * delta;
+                    if (this._capyY <= this._groundY) {
+                        this._capyY = this._groundY;
+                        this._capyVY = 0;
+                        this._jumping = false;
+                    }
+                }
+                if (this._capyMesh) {
+                    this._capyMesh.position.y = this._capyY;
+                    // Slight bob when on ground
+                    if (!this._jumping) {
+                        this._capyMesh.position.y += Math.sin(time * 12) * 0.02;
+                    }
+                }
+
+                // Move ground tiles
+                const scrollDist = this._speed * delta;
+                for (const tile of this._groundTiles) {
+                    tile.position.z += scrollDist;
+                    if (tile.position.z > 80) tile.position.z -= 240;
+                }
+                for (const tile of this._pathTiles) {
+                    tile.position.z += scrollDist;
+                    if (tile.position.z > 80) tile.position.z -= 240;
+                }
+
+                // Move trees
+                for (const tree of this._trees) {
+                    tree.position.z += scrollDist;
+                    if (tree.position.z > 15) tree.position.z -= 130;
+                }
+
+                // Spawn obstacles
+                this._obstacleTimer += delta;
+                // Decrease interval as speed increases (harder over time)
+                const adjObsInterval = Math.max(0.7, this._obstacleInterval - (this._speed - 8) * 0.03);
+                if (this._obstacleTimer >= adjObsInterval) {
+                    this._obstacleTimer = 0;
+                    this._spawnObstacle();
+                }
+
+                // Spawn coins
+                this._coinTimer += delta;
+                if (this._coinTimer >= this._coinInterval) {
+                    this._coinTimer = 0;
+                    this._spawnCoin();
+                }
+
+                // Move & check obstacles
+                for (let i = this._obstacles.length - 1; i >= 0; i--) {
+                    const obs = this._obstacles[i];
+                    obs.position.z += scrollDist;
+                    obs.rotation.x += delta * 3;
+                    obs.rotation.z += delta * 2;
+
+                    // Collision check (sphere vs sphere)
+                    if (this._capyMesh) {
+                        const dx = obs.position.x - this._capyMesh.position.x;
+                        const dy = obs.position.y - (this._capyY + 0.5);
+                        const dz = obs.position.z - this._capyMesh.position.z;
+                        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                        if (dist < 0.75) {
+                            this._triggerGameOver();
+                            return;
+                        }
+                    }
+
+                    // Despawn
+                    if (obs.position.z > this._despawnZ) {
+                        this._scene.remove(obs);
+                        this._obstacles.splice(i, 1);
+                    }
+                }
+
+                // Move & check coins
+                for (let i = this._coins.length - 1; i >= 0; i--) {
+                    const coin = this._coins[i];
+                    coin.position.z += scrollDist;
+                    coin.rotation.z += delta * 4; // spin
+
+                    // Collect check
+                    if (this._capyMesh) {
+                        const dx = coin.position.x - this._capyMesh.position.x;
+                        const dy = coin.position.y - (this._capyY + 0.5);
+                        const dz = coin.position.z - this._capyMesh.position.z;
+                        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                        if (dist < 1.0) {
+                            this._score += 10;
+                            document.getElementById('walkies-score-val').textContent = this._score;
+                            this._scene.remove(coin);
+                            this._coins.splice(i, 1);
+                            continue;
+                        }
+                    }
+
+                    // Despawn
+                    if (coin.position.z > this._despawnZ) {
+                        this._scene.remove(coin);
+                        this._coins.splice(i, 1);
+                    }
+                }
+
+                // Distance score based on actual distance traveled (frame-rate independent)
+                this._distAccum += scrollDist;
+                while (this._distAccum >= 1) {
+                    this._score += 1;
+                    this._distAccum -= 1;
+                }
+                document.getElementById('walkies-score-val').textContent = this._score;
+            }
+
+            _triggerGameOver() {
+                this._gameOver = true;
+                document.getElementById('walkies-final-score').textContent = this._score;
+                document.getElementById('walkies-gameover').classList.add('visible');
+            }
+
+            render() {
+                this._renderer.render(this._scene, this._camera);
+            }
+
+            restart() {
+                // Clear objects
+                for (const obs of this._obstacles) this._scene.remove(obs);
+                for (const coin of this._coins) this._scene.remove(coin);
+                this._obstacles = [];
+                this._coins = [];
+
+                // Reset state
+                this._score = 0;
+                this._speed = 8;
+                this._capyY = 0;
+                this._capyVY = 0;
+                this._jumping = false;
+                this._obstacleTimer = 0;
+                this._coinTimer = 0;
+                this._distAccum = 0;
+                this._gameOver = false;
+
+                if (this._capyMesh) this._capyMesh.position.y = this._groundY;
+
+                document.getElementById('walkies-gameover').classList.remove('visible');
+                document.getElementById('walkies-score-val').textContent = '0';
+                this._clock.start();
+            }
+
+            exit() {
+                this._running = false;
+                this._unbindInput();
+                document.getElementById('walkies-hud').classList.remove('active');
+                if (this._onExit) this._onExit();
+            }
+
+            handleResize() {
+                this._camera.aspect = window.innerWidth / window.innerHeight;
+                this._camera.updateProjectionMatrix();
+            }
+        }
 
         class CapybaraSimulator {
             constructor() {
@@ -338,6 +872,9 @@
                 this._foodCubeAnim = null; // { startTime, startY, endY, duration }
                 this._heartParticles = []; // array of { mesh, startTime, velocity, ... }
 
+                // Walkies mini-game
+                this._walkiesGame = null;
+
                 this.setupLighting();
                 this.loadModels().then(() => this.buildScene());
                 this.animate();
@@ -346,6 +883,7 @@
                     this.camera.aspect = window.innerWidth / window.innerHeight;
                     this.camera.updateProjectionMatrix();
                     this.renderer.setSize(window.innerWidth, window.innerHeight);
+                    if (this._walkiesGame) this._walkiesGame.handleResize();
                 });
             }
 
@@ -1254,6 +1792,8 @@
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
                         playMenu.classList.remove('visible');
+                        const game = item.getAttribute('data-game');
+                        if (game === 'walkies') this._startWalkies();
                     });
                 });
 
@@ -1266,6 +1806,28 @@
                 sleepBtn.addEventListener('click', (e) => { e.stopPropagation(); });
 
                 document.getElementById('action-buttons').style.display = 'flex';
+            }
+
+            _startWalkies() {
+                if (this._walkiesGame) return;
+                // Hide main simulator UI
+                document.getElementById('hud').style.display = 'none';
+                document.getElementById('action-buttons').style.display = 'none';
+                document.getElementById('food-menu').classList.remove('visible');
+                document.getElementById('play-menu').classList.remove('visible');
+                this.controls.enabled = false;
+                this._hatsEnabled = false;
+
+                this._walkiesGame = new WalkiesGame(this.renderer, () => this._stopWalkies());
+            }
+
+            _stopWalkies() {
+                this._walkiesGame = null;
+                // Restore main simulator UI
+                document.getElementById('hud').style.display = '';
+                document.getElementById('action-buttons').style.display = 'flex';
+                this.controls.enabled = true;
+                this._hatsEnabled = true;
             }
 
             _dropFoodCube(fruitType) {
@@ -1831,6 +2393,14 @@
 
             animate() {
                 requestAnimationFrame(() => this.animate());
+
+                // If walkies game is active, update and render it instead
+                if (this._walkiesGame) {
+                    this._walkiesGame.update();
+                    this._walkiesGame.render();
+                    return;
+                }
+
                 const delta = this.clock.getDelta();
                 const time = this.clock.elapsedTime;
 
