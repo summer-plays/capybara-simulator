@@ -83,21 +83,23 @@
             background: rgba(255,255,255,0.15);
             border: 1px solid rgba(255,255,255,0.2);
             color: rgba(255,255,255,0.8);
-            border-radius: 20px;
-            padding: 8px 22px;
+            border-radius: 16px;
+            padding: 6px;
             font-family: 'Quicksand', sans-serif;
-            font-size: 14px; font-weight: 500;
+            font-size: 12px; font-weight: 500;
             letter-spacing: 1px;
             cursor: pointer;
             backdrop-filter: blur(8px);
             transition: all 0.2s;
-            display: flex; align-items: center; gap: 6px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            width: 72px;
         }
         .action-btn:hover {
             background: rgba(255,255,255,0.25);
             color: rgba(255,255,255,0.95);
         }
-        .action-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .action-btn img { width: 48px; height: 48px; object-fit: contain; }
+        .action-btn .btn-label { font-size: 11px; line-height: 1; }
 
         /* ── FOOD MENU ── */
         #food-menu {
@@ -157,8 +159,9 @@
 
         @media (max-width: 600px) {
             #action-buttons { bottom: 18px; gap: 8px; }
-            .action-btn { padding: 6px 14px; font-size: 12px; }
-            .action-btn svg { width: 14px; height: 14px; }
+            .action-btn { padding: 4px; width: 60px; }
+            .action-btn img { width: 38px; height: 38px; }
+            .action-btn .btn-label { font-size: 10px; }
             #food-menu { bottom: 64px; gap: 6px; }
             .food-item { padding: 6px 12px; font-size: 12px; }
             #play-menu { bottom: 64px; gap: 8px; }
@@ -766,6 +769,52 @@
         }
         #fetch-flash.hit { background: rgba(255, 217, 112, 0.15); opacity: 1; }
         #fetch-flash.bonus-hit { background: rgba(125, 255, 125, 0.2); opacity: 1; }
+        #fetch-flash.bullseye { background: rgba(255, 255, 255, 0.3); opacity: 1; }
+
+        /* Power bar max glow */
+        #fetch-power-wrap.maxed {
+            box-shadow: 0 0 14px rgba(231, 76, 60, 0.7), 0 0 28px rgba(231, 76, 60, 0.35);
+            border-color: rgba(231, 76, 60, 0.6);
+        }
+        #fetch-power-wrap.maxed #fetch-power-fill {
+            animation: powerPulse 0.25s ease-in-out infinite alternate;
+        }
+        @keyframes powerPulse {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.4); }
+        }
+
+        /* Streak phrase text */
+        .fetch-streak-phrase {
+            position: fixed;
+            left: 50%; top: 35%;
+            transform: translate(-50%, -50%) scale(0.2);
+            font-family: 'Quicksand', sans-serif;
+            font-size: 52px; font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 66;
+            animation: streakPhrase 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .fetch-streak-phrase.nice { color: #ffd970; text-shadow: 0 2px 20px rgba(255,217,112,0.7); }
+        .fetch-streak-phrase.great { color: #ff8c42; text-shadow: 0 2px 24px rgba(255,140,66,0.8), 0 0 60px rgba(255,140,66,0.3); }
+        .fetch-streak-phrase.amazing { color: #ff4ecb; text-shadow: 0 2px 28px rgba(255,78,203,0.8), 0 0 80px rgba(255,78,203,0.3); font-size: 64px; }
+        .fetch-streak-phrase.legendary { color: #fff; text-shadow: 0 2px 32px rgba(255,255,255,0.9), 0 0 100px rgba(255,200,50,0.5); font-size: 72px; }
+
+        /* Bullseye! text */
+        .fetch-streak-phrase.bullseye-txt {
+            color: #fff;
+            font-size: 68px;
+            text-shadow: 0 0 30px rgba(255,255,255,0.9), 0 0 60px rgba(255,215,0,0.7), 0 0 100px rgba(255,215,0,0.4);
+        }
+        @keyframes streakPhrase {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.2) rotate(-5deg); }
+            12% { opacity: 1; transform: translate(-50%, -50%) scale(1.3) rotate(2deg); }
+            22% { transform: translate(-50%, -50%) scale(0.95) rotate(0deg); }
+            32% { transform: translate(-50%, -50%) scale(1.05) rotate(0deg); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7) translateY(-60px) rotate(0deg); }
+        }
 
         @media (max-width: 600px) {
             #fetch-score { font-size: 18px; padding: 5px 16px; }
@@ -846,16 +895,16 @@
     </div>
     <div id="action-buttons">
         <button class="action-btn" id="btn-food" title="Feed capybara">
-            <svg viewBox="0 0 24 24"><path d="M12 2C9.5 2 7 4.5 7 7c0 2 1 4 2 5h6c1-1 2-3 2-5 0-2.5-2.5-5-5-5z"/><rect x="11" y="12" width="2" height="5" rx="1"/><path d="M8 21h8"/></svg>
-            Food
+            <img src="Icons/fOOD CAPY.png" alt="Food">
+            <span class="btn-label">Food</span>
         </button>
         <button class="action-btn" id="btn-play" title="Play with capybara">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10,8 16,12 10,16"/></svg>
-            Play
+            <img src="Icons/PLAY BUTTON CAPY.png" alt="Play">
+            <span class="btn-label">Play</span>
         </button>
         <button class="action-btn" id="btn-sleep" title="Let capybara sleep">
-            <svg viewBox="0 0 24 24"><path d="M2 12a10 10 0 0018-6 8 8 0 11-18 6z"/></svg>
-            Sleep
+            <img src="Icons/sLEEP capy.png" alt="Sleep">
+            <span class="btn-label">Sleep</span>
         </button>
     </div>
     <div id="sleep-overlay"></div>
@@ -999,6 +1048,30 @@
                 this._slowMoTimer = 0;
                 this._slowMoScale = 1;
                 this._floatingTexts = []; // 3D text sprites
+
+                // Stick trail
+                this._trailParticles = [];
+                this._trailTimer = 0;
+
+                // Camera dynamics
+                this._cameraKickVel = new THREE.Vector3();
+                this._cameraLerpTarget = null; // lerp toward stick in flight
+
+                // Capybara celebration
+                this._celebTimer = 0;
+                this._celebSpinSpeed = 0;
+
+                // Running dust
+                this._dustTimer = 0;
+
+                // Hitstop
+                this._hitstopTimer = 0;
+
+                // Stick shadow
+                this._stickShadow = null;
+
+                // Bullseye tracking
+                this._lastBullseye = false;
 
                 // Asset tracking
                 this._assetsTotal = 4; // capybara + tree1 + tree2 + flower
@@ -1721,6 +1794,16 @@
 
                 this._playThrowSound();
 
+                // Camera kick in throw direction
+                this._kickCamera(dirX, dirZ, power * 2 + 0.5);
+
+                // Reset trail timer
+                this._trailTimer = 0;
+
+                // Remove power bar max glow
+                const wrap = document.getElementById('fetch-power-wrap');
+                if (wrap) wrap.classList.remove('maxed');
+
                 // Hint fade
                 const hint = document.getElementById('fetch-hint');
                 if (hint) hint.style.opacity = '0';
@@ -1821,6 +1904,231 @@
                 }
             }
 
+            /* ── Stick trail while airborne ── */
+            _updateStickTrail(delta) {
+                if (this._state !== 'thrown') return;
+                this._trailTimer += delta;
+                if (this._trailTimer >= 0.025) { // spawn every 25ms
+                    this._trailTimer = 0;
+                    const geo = new THREE.SphereGeometry(0.025, 3, 3);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xffeebb, transparent: true, opacity: 0.6 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.copy(this._stick.position);
+                    this._scene.add(mesh);
+                    this._trailParticles.push({ mesh, mat, life: 0.35, age: 0 });
+                }
+                // Update existing trail dots
+                for (let i = this._trailParticles.length - 1; i >= 0; i--) {
+                    const t = this._trailParticles[i];
+                    t.age += delta;
+                    if (t.age >= t.life) {
+                        this._scene.remove(t.mesh);
+                        t.mesh.geometry.dispose();
+                        t.mat.dispose();
+                        this._trailParticles.splice(i, 1);
+                    } else {
+                        const frac = t.age / t.life;
+                        t.mat.opacity = 0.6 * (1 - frac);
+                        const s = 1 - frac * 0.7;
+                        t.mesh.scale.set(s, s, s);
+                    }
+                }
+            }
+
+            /* ── Stick ground shadow ── */
+            _createStickShadow() {
+                const geo = new THREE.CircleGeometry(0.25, 12);
+                const mat = new THREE.MeshBasicMaterial({
+                    color: 0x000000, transparent: true, opacity: 0.2,
+                    side: THREE.DoubleSide, depthWrite: false
+                });
+                this._stickShadow = new THREE.Mesh(geo, mat);
+                this._stickShadow.rotation.x = -Math.PI / 2;
+                this._stickShadow.visible = false;
+                this._scene.add(this._stickShadow);
+            }
+
+            _updateStickShadow() {
+                if (!this._stickShadow) this._createStickShadow();
+                if (this._state === 'thrown') {
+                    this._stickShadow.visible = true;
+                    this._stickShadow.position.set(this._stick.position.x, 0.01, this._stick.position.z);
+                    // Shadow scales/fades with height
+                    const h = Math.max(0.5, this._stick.position.y);
+                    const scale = Math.max(0.3, 1.2 - h * 0.06);
+                    const opacity = Math.max(0.05, 0.3 - h * 0.02);
+                    this._stickShadow.scale.set(scale, scale, scale);
+                    this._stickShadow.material.opacity = opacity;
+                } else {
+                    this._stickShadow.visible = false;
+                }
+            }
+
+            /* ── Camera kick on throw ── */
+            _kickCamera(dirX, dirZ, strength) {
+                this._cameraKickVel.set(dirX * strength * 0.4, strength * 0.15, dirZ * strength * 0.3);
+            }
+
+            _updateCameraKick(delta) {
+                if (this._cameraKickVel.lengthSq() < 0.0001) return;
+                this._camera.position.add(this._cameraKickVel.clone().multiplyScalar(delta));
+                // Dampen
+                this._cameraKickVel.multiplyScalar(Math.exp(-12 * delta));
+            }
+
+            /* ── Camera lerp toward stick in flight ── */
+            _updateCameraLerp(delta) {
+                if (this._state === 'thrown' && this._stick) {
+                    const target = this._stick.position;
+                    // Gently nudge the orbit target toward the stick
+                    if (this._controls) {
+                        this._controls.target.x += (target.x * 0.3 - this._controls.target.x) * 2 * delta;
+                        this._controls.target.z += (Math.min(target.z, -2) * 0.3 + 1.4 - this._controls.target.z) * 2 * delta;
+                    }
+                } else if (this._state === 'ready') {
+                    // Ease back to default view
+                    if (this._controls) {
+                        this._controls.target.x += (0 - this._controls.target.x) * 3 * delta;
+                        this._controls.target.z += (-2 - this._controls.target.z) * 3 * delta;
+                    }
+                }
+            }
+
+            /* ── Capybara running dust ── */
+            _updateRunDust(delta) {
+                if (this._state !== 'fetching' && this._state !== 'returning') return;
+                if (!this._capyGroup) return;
+                this._dustTimer += delta;
+                const interval = this._sprinting ? 0.08 : 0.14;
+                if (this._dustTimer >= interval) {
+                    this._dustTimer = 0;
+                    const pos = this._capyGroup.position.clone();
+                    pos.y = 0.02;
+                    // Tiny puff behind feet
+                    const geo = new THREE.SphereGeometry(0.04 + Math.random() * 0.04, 4, 4);
+                    const mat = new THREE.MeshBasicMaterial({ color: 0xc4a97d, transparent: true, opacity: 0.45 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.copy(pos);
+                    mesh.position.x += (Math.random() - 0.5) * 0.2;
+                    mesh.position.z += (Math.random() - 0.5) * 0.2;
+                    this._scene.add(mesh);
+                    this._particles.push({
+                        mesh, mat, vel: new THREE.Vector3((Math.random()-0.5)*0.5, 0.5+Math.random()*0.4, (Math.random()-0.5)*0.5),
+                        life: 0.3 + Math.random() * 0.2, age: 0
+                    });
+                }
+            }
+
+            /* ── Capybara celebration spin on target return ── */
+            _startCelebration() {
+                this._celebTimer = 0.6;
+                this._celebSpinSpeed = 16;
+            }
+
+            _updateCelebration(delta) {
+                if (this._celebTimer <= 0) return;
+                this._celebTimer -= delta;
+                if (this._capyGroup) {
+                    this._capyGroup.rotation.y += this._celebSpinSpeed * delta;
+                    // Little hop
+                    this._capyGroup.position.y = Math.abs(Math.sin(this._celebTimer * 12)) * 0.15;
+                    this._celebSpinSpeed *= Math.exp(-2 * delta); // slow down
+                }
+                if (this._celebTimer <= 0) {
+                    this._celebTimer = 0;
+                    if (this._capyGroup) {
+                        this._capyGroup.rotation.y = Math.PI;
+                        this._capyGroup.position.y = 0;
+                    }
+                }
+            }
+
+            /* ── Pickup burst when capybara grabs stick ── */
+            _spawnPickupBurst() {
+                if (!this._capyGroup) return;
+                const pos = this._capyGroup.position.clone();
+                pos.y += 0.3;
+                // Little burst of joy sparkles
+                this._spawnParticles(pos, 10, 0xffeedd, 1.5, 2.5);
+                this._playPickupSound();
+            }
+
+            _playPickupSound() {
+                if (!this._audioCtx || !this._masterGain) return;
+                const ctx = this._audioCtx; const t = ctx.currentTime;
+                // Quick happy "boop" — short sine pop
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, t);
+                osc.frequency.linearRampToValueAtTime(900, t + 0.06);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.25, t + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+                osc.connect(gain).connect(this._masterGain);
+                osc.start(t); osc.stop(t + 0.12);
+            }
+
+            /* ── Hitstop (tiny freeze on big hits) ── */
+            _triggerHitstop(duration) {
+                this._hitstopTimer = duration;
+            }
+
+            /* ── Bullseye check (center of target) ── */
+            _checkBullseye() {
+                const dx = this._stick.position.x - this._targetPos.x;
+                const dz = this._stick.position.z - this._targetPos.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                return dist <= this._targetRadius * 0.3; // inner 30% = bullseye
+            }
+
+            /* ── Bullseye celebration sound ── */
+            _playBullseyeSound() {
+                if (!this._audioCtx || !this._masterGain) return;
+                const ctx = this._audioCtx; const t = ctx.currentTime;
+                // Sparkly flourish — fast ascending arpeggio + shimmer
+                const notes = [784, 988, 1175, 1397, 1568, 1760, 2093];
+                notes.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = i < 4 ? 'sine' : 'triangle';
+                    osc.frequency.value = freq;
+                    const start = t + i * 0.04;
+                    gain.gain.setValueAtTime(0, start);
+                    gain.gain.linearRampToValueAtTime(0.14, start + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
+                    osc.connect(gain).connect(this._masterGain);
+                    osc.start(start); osc.stop(start + 0.4);
+                });
+            }
+
+            /* ── Streak phrase popup ── */
+            _showStreakPhrase() {
+                let text, cls;
+                if (this._streak === 3) { text = 'NICE!'; cls = 'nice'; }
+                else if (this._streak === 5) { text = 'GREAT!'; cls = 'great'; }
+                else if (this._streak === 7) { text = 'AMAZING!'; cls = 'amazing'; }
+                else if (this._streak >= 10) { text = 'LEGENDARY!'; cls = 'legendary'; }
+                else return;
+
+                const el = document.createElement('div');
+                el.className = 'fetch-streak-phrase ' + cls;
+                el.textContent = text;
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 1800);
+            }
+
+            /* ── Power bar max glow ── */
+            _updatePowerBarGlow() {
+                const wrap = document.getElementById('fetch-power-wrap');
+                if (!wrap) return;
+                if (this._chargePower >= 0.98) {
+                    wrap.classList.add('maxed');
+                } else {
+                    wrap.classList.remove('maxed');
+                }
+            }
+
             /* ── Landing FX ── */
             _onStickLand(hitTarget) {
                 const landPos = this._stick.position.clone();
@@ -1829,17 +2137,37 @@
                 this._spawnParticles(landPos, 12, 0x8B7355, 2.5, 2);
 
                 if (hitTarget) {
-                    // Golden sparkle burst for target hit
-                    this._spawnParticles(landPos, 18, 0xffd970, 3, 3.5);
-                    this._triggerShake(0.25);
-                    // Slow-mo effect
-                    this._slowMoTimer = 0.35;
-                    this._slowMoScale = 0.25;
-                    // Screen flash
-                    this._screenFlash('bonus-hit');
-                    // Bonus landing sound
-                    this._playTargetHitSound();
+                    // Check bullseye (center hit)
+                    this._lastBullseye = this._checkBullseye();
+
+                    if (this._lastBullseye) {
+                        // BULLSEYE — extra juice!
+                        this._spawnParticles(landPos, 30, 0xffffff, 4, 5);
+                        this._spawnParticles(landPos, 20, 0xffd700, 3.5, 4);
+                        this._triggerShake(0.45);
+                        this._slowMoTimer = 0.5;
+                        this._slowMoScale = 0.15;
+                        this._triggerHitstop(0.07);
+                        this._screenFlash('bullseye');
+                        this._playBullseyeSound();
+                        // Show BULLSEYE text
+                        const el = document.createElement('div');
+                        el.className = 'fetch-streak-phrase bullseye-txt';
+                        el.textContent = 'BULLSEYE!';
+                        document.body.appendChild(el);
+                        setTimeout(() => el.remove(), 1800);
+                    } else {
+                        // Normal target hit
+                        this._spawnParticles(landPos, 18, 0xffd970, 3, 3.5);
+                        this._triggerShake(0.25);
+                        this._slowMoTimer = 0.35;
+                        this._slowMoScale = 0.25;
+                        this._triggerHitstop(0.04);
+                        this._screenFlash('bonus-hit');
+                        this._playTargetHitSound();
+                    }
                 } else {
+                    this._lastBullseye = false;
                     this._triggerShake(0.1);
                     this._screenFlash('hit');
                     this._playLandThud();
@@ -1940,6 +2268,16 @@
                 if (!this._running) return;
                 if (this._loading) return;
                 const rawDelta = Math.min(this._clock.getDelta(), 0.05);
+
+                // Hitstop — freeze game briefly on big hits
+                if (this._hitstopTimer > 0) {
+                    this._hitstopTimer -= rawDelta;
+                    // Still render, just don't advance game logic
+                    this._updateParticles(rawDelta);
+                    this._updateShake(rawDelta);
+                    return;
+                }
+
                 const timeScale = this._updateSlowMo(rawDelta);
                 const delta = rawDelta * timeScale;
                 const time = this._clock.elapsedTime;
@@ -1958,6 +2296,8 @@
                     this._updateAimIndicator();
                     // Stick wobble to indicate charging
                     this._stick.rotation.z = Math.PI / 4 + Math.sin(time * 20) * 0.1 * this._chargePower;
+                    // Power bar max glow
+                    this._updatePowerBarGlow();
                 }
 
                 // Stick flying
@@ -1991,7 +2331,8 @@
                         if (this._lastThrowInTarget) {
                             const landPopup = this._stick.position.clone();
                             landPopup.y += 1;
-                            this._showPlusOne(2, landPopup);
+                            const bullseyeBonus = this._lastBullseye ? 1 : 0;
+                            this._showPlusOne(2 + bullseyeBonus, landPopup);
                         }
                         // Capybara goes after it
                         this._capyTargetPos.copy(this._stick.position);
@@ -2011,6 +2352,12 @@
                 // Game feel updates
                 this._updateParticles(rawDelta);
                 this._updateShake(rawDelta);
+                this._updateStickTrail(rawDelta);
+                this._updateStickShadow();
+                this._updateCameraKick(rawDelta);
+                this._updateCameraLerp(rawDelta);
+                this._updateRunDust(rawDelta);
+                this._updateCelebration(rawDelta);
 
                 // Animation mixer
                 if (this._capyMixer) {
@@ -2021,6 +2368,12 @@
             /* ── Capybara movement ── */
             _updateCapybara(delta, time) {
                 if (!this._capyGroup) return;
+
+                // Celebration spin overrides normal movement
+                if (this._celebTimer > 0) {
+                    this._updateCelebration(delta);
+                    return;
+                }
 
                 if (this._state === 'fetching') {
                     // Run to stick
@@ -2044,6 +2397,8 @@
                         this._stick.visible = false;
                         this._state = 'returning';
                         this._capyTargetPos.copy(this._capyHomePos);
+                        // Pickup burst!
+                        this._spawnPickupBurst();
                     }
                 } else if (this._state === 'returning') {
                     // Run back home
@@ -2066,10 +2421,11 @@
                         this._capyHasStick = false;
                         // Streak tracking
                         this._updateStreak(this._lastThrowInTarget);
-                        // Check if stick landed in target zone + streak bonus
+                        // Check if stick landed in target zone + streak bonus + bullseye bonus
                         const basePts = this._lastThrowInTarget ? 2 : 1;
                         const streakBonus = this._getStreakBonus();
-                        const pts = basePts + streakBonus;
+                        const bullseyeBonus = this._lastBullseye ? 1 : 0;
+                        const pts = basePts + streakBonus + bullseyeBonus;
                         this._score += pts;
                         this._updateHUD();
                         this._playScoreSound();
@@ -2077,6 +2433,14 @@
                         const popupPos = this._capyGroup.position.clone();
                         popupPos.y += 1.5;
                         this._showPlusOne(pts, popupPos);
+                        // Streak phrase popup
+                        this._showStreakPhrase();
+                        // Celebration spin for target hits!
+                        if (this._lastThrowInTarget) {
+                            this._startCelebration();
+                            // Extra sparkle burst on return
+                            this._spawnParticles(this._capyGroup.position.clone(), 14, 0xffd970, 2, 3);
+                        }
                         // Reset stick to hand
                         this._resetStickToHand();
                         this._state = 'ready';
@@ -2126,8 +2490,15 @@
                 // Clean up particles
                 for (const p of this._particles) { this._scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mat.dispose(); }
                 this._particles.length = 0;
+                // Clean up trail particles
+                for (const t of this._trailParticles) { this._scene.remove(t.mesh); t.mesh.geometry.dispose(); t.mat.dispose(); }
+                this._trailParticles.length = 0;
+                // Clean up stick shadow
+                if (this._stickShadow) { this._scene.remove(this._stickShadow); this._stickShadow.geometry.dispose(); this._stickShadow.material.dispose(); this._stickShadow = null; }
+                // Clean up any streak phrase elements
+                document.querySelectorAll('.fetch-streak-phrase').forEach(el => el.remove());
                 document.getElementById('fetch-hud').classList.remove('active');
-                document.getElementById('fetch-power-wrap').classList.remove('visible');
+                document.getElementById('fetch-power-wrap').classList.remove('visible', 'maxed');
                 document.getElementById('fetch-aim-wrap').classList.remove('visible');
                 document.getElementById('fetch-sprint').classList.remove('visible', 'active');
                 document.getElementById('fetch-streak').classList.remove('visible');
