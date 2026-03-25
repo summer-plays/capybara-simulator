@@ -31,7 +31,6 @@
             display: none; justify-content: space-between; align-items: flex-start;
         }
         @media (max-width: 600px) {
-            #hud { top: 50px; padding: 6px 10px; }
             #points { font-size: 12px; padding: 3px 10px; }
             #points span { font-size: 14px; }
             #music-controls { gap: 5px; }
@@ -39,7 +38,6 @@
             #music-controls button svg { width: 14px; height: 14px; }
         }
         #points {
-            font-size: 15px; font-weight: 300; letter-spacing: 1.5px;
             color: rgba(255,255,255,0.75);
             text-shadow: 0 1px 4px rgba(0,0,0,0.3);
             background: rgba(255,255,255,0.15);
@@ -1514,6 +1512,11 @@
             #fr-hub-compass { top: 104px; font-size: 11px; padding: 5px 10px; max-width: 88vw; }
             #fr-game-hint { top: 136px; font-size: 11px; max-width: 90vw; white-space: normal; text-align: center; }
             #fr-mg-touch-hint { left: 12px; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); max-width: 150px; font-size: 10px; padding: 7px 9px; }
+            #fr-cup-ui { bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
+            #fr-cup-instruction { font-size: 16px; margin-bottom: 10px; }
+            #fr-cup-buttons { gap: 8px; }
+            .fr-cup-btn { flex: 1 1 0; min-width: 0; padding: 12px 10px; font-size: 14px; }
+            .fr-cup-exit-btn { width: 100%; padding: 12px 14px; font-size: 14px; }
             #fr-joystick-zone { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: 12px; width: 120px; height: 120px; }
             #fr-joystick-base { width: 100px; height: 100px; }
             #fr-joystick-stick { width: 36px; height: 36px; }
@@ -1596,6 +1599,7 @@
             transform: translateX(-50%);
             text-align: center;
             z-index: 225;
+            width: min(92vw, 420px);
         }
         #fr-cup-ui.visible { display: block; }
         #fr-cup-instruction {
@@ -1604,6 +1608,13 @@
             margin-bottom: 12px;
         }
         #fr-cup-buttons { display: flex; gap: 12px; justify-content: center; }
+        #fr-cup-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
         .fr-cup-btn {
             background: linear-gradient(135deg, rgba(60, 40, 20, 0.9), rgba(100, 70, 30, 0.9));
             border: 2px solid rgba(200, 160, 80, 0.5);
@@ -1614,6 +1625,18 @@
         .fr-cup-btn:active { transform: scale(0.92); }
         .fr-cup-btn.correct { border-color: #44ff88; background: rgba(40, 120, 60, 0.8); color: #44ff88; }
         .fr-cup-btn.wrong { border-color: #ff4444; background: rgba(120, 30, 30, 0.8); color: #ff6666; }
+        .fr-cup-exit-btn {
+            background: rgba(255, 60, 60, 0.82);
+            border: 1px solid rgba(255, 130, 130, 0.55);
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+        .fr-cup-exit-btn:active { transform: scale(0.95); }
 
     </style>
     <meta name="x-pf-key" content="9cr2tMejZArKSAw1JAvQMmQBRVKwNCvBbLPRNAzBgYZV" />
@@ -1720,6 +1743,9 @@
                 <button class="fr-cup-btn" data-cup="0">Cup 1</button>
                 <button class="fr-cup-btn" data-cup="1">Cup 2</button>
                 <button class="fr-cup-btn" data-cup="2">Cup 3</button>
+            </div>
+            <div id="fr-cup-actions">
+                <button id="fr-cup-exit" class="fr-cup-exit-btn">← Exit to Free Roam</button>
             </div>
         </div>
     </div>
@@ -5741,6 +5767,8 @@
                 this._miniGameType = null;
                 this._miniGameData = {};
                 this._miniGameScene = null;
+                this._miniGamePointer = new THREE.Vector2();
+                this._miniGameRaycaster = new THREE.Raycaster();
 
                 this._scene = new THREE.Scene();
                 this._scene.background = new THREE.Color(0xd4c8a8);
@@ -6385,6 +6413,10 @@
                 });
                 // Bind mini-game exit
                 document.getElementById('fr-mg-exit').addEventListener('click', () => this._exitMiniGame());
+                document.getElementById('fr-cup-exit').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._exitMiniGame();
+                });
             }
 
             // ── LOAD ASSETS ──
@@ -6633,6 +6665,26 @@
                 joyZone.addEventListener('mousedown', (e) => { onDown(e.clientX, e.clientY, -1); });
                 window.addEventListener('mousemove', (e) => { if (this._joyActive) onMove(e.clientX, e.clientY); });
                 window.addEventListener('mouseup', () => { if (this._joyActive) onUp(); });
+
+                this._onMiniGamePointerDown = (e) => {
+                    if (!this._miniGameActive || this._miniGameType !== 'cups') return;
+                    const d = this._miniGameData;
+                    if (!d || d.phase !== 'guess' || !d.cups || d.cups.length !== 3) return;
+
+                    const rect = this._renderer.domElement.getBoundingClientRect();
+                    if (!rect.width || !rect.height) return;
+
+                    this._miniGamePointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    this._miniGamePointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                    this._miniGameRaycaster.setFromCamera(this._miniGamePointer, this._camera);
+
+                    const hit = this._miniGameRaycaster.intersectObjects(d.cups, false)[0];
+                    if (!hit) return;
+
+                    const cupIndex = d.cups.indexOf(hit.object);
+                    if (cupIndex >= 0) this._cupGuess(cupIndex);
+                };
+                this._renderer.domElement.addEventListener('pointerdown', this._onMiniGamePointerDown);
 
                 // ── WASD / Arrow key support ──
                 this._keys = { w: false, a: false, s: false, d: false };
@@ -9428,6 +9480,10 @@
                 if (this._onKeyDown) {
                     window.removeEventListener('keydown', this._onKeyDown);
                     window.removeEventListener('keyup', this._onKeyUp);
+                }
+                if (this._onMiniGamePointerDown) {
+                    this._renderer.domElement.removeEventListener('pointerdown', this._onMiniGamePointerDown);
+                    this._onMiniGamePointerDown = null;
                 }
                 // Stop ambient audio
                 if (this._windNode) { try { this._windNode.stop(); } catch(e) {} }
