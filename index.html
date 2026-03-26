@@ -125,7 +125,7 @@
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this._isMobile ? 1.5 : 2));
                 this.renderer.shadowMap.enabled = true;
-                this.renderer.shadowMap.type = this._isMobile ? THREE.BasicShadowMap : THREE.PCFShadowMap;
+                this.renderer.shadowMap.type = THREE.PCFShadowMap;
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 this.renderer.toneMappingExposure = 1.2;
                 this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -236,14 +236,14 @@
                 this._sun = new THREE.DirectionalLight(0xfff4d6, 1.2);
                 this._sun.position.set(10, 20, 5);
                 this._sun.castShadow = true;
-                this._sun.shadow.mapSize.set(this._isMobile ? 512 : 1024, this._isMobile ? 512 : 1024);
+                this._sun.shadow.mapSize.set(1024, 1024);
                 this._sun.shadow.camera.left = -20;
                 this._sun.shadow.camera.right = 20;
                 this._sun.shadow.camera.top = 20;
                 this._sun.shadow.camera.bottom = -20;
                 this._sun.shadow.camera.near = 0.5;
                 this._sun.shadow.camera.far = 60;
-                this._sun.shadow.bias = -0.001;
+                this._sun.shadow.bias = -0.003;
                 this.scene.add(this._sun);
 
                 this._ambient = new THREE.AmbientLight(0x607060, 0.4);
