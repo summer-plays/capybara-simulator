@@ -47,6 +47,13 @@
             backdrop-filter: blur(8px);
         }
         #points span { font-weight: 500; font-size: 17px; }
+        @keyframes vibeFlash {
+            0% { background: rgba(100, 255, 130, 0.5); transform: scale(1.1); }
+            100% { background: rgba(255,255,255,0.15); transform: scale(1); }
+        }
+        #points.vibe-flash {
+            animation: vibeFlash 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
         #music-controls {
             pointer-events: all;
             display: flex; gap: 8px; align-items: center;
@@ -10468,15 +10475,35 @@
                     if (this.playfun) this.playfun.addPoints(1);
                 }, 10000);
 
-                // Save points to server every 2 minutes
+                // Save points to server every 5 minutes
                 setInterval(() => {
                     if (this.playfun) this.playfun.savePoints();
-                }, 120000);
+                }, 300000);
 
                 // Save on page unload
                 window.addEventListener('beforeunload', () => {
                     if (this.playfun) this.playfun.savePoints();
                 });
+
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden && this.playfun) this.playfun.savePoints();
+                });
+            }
+
+            awardVibes(amount) {
+                if (amount <= 0) return;
+                this.score += amount;
+                this.scoreEl.textContent = this.score;
+                // Green flash
+                const el = document.getElementById('points');
+                el.classList.remove('vibe-flash');
+                void el.offsetWidth;
+                el.classList.add('vibe-flash');
+                // Play.fun SDK
+                if (this.playfun) {
+                    this.playfun.addPoints(amount);
+                    this.playfun.savePoints();
+                }
             }
 
             setupWeather() {
