@@ -10585,6 +10585,7 @@
                     this.score++;
                     this.scoreEl.textContent = this.score;
                     if (this.playfun) this.playfun.addPoints(1);
+                    console.log('[VIBES] +1 from passive | total: ' + this.score);
                 }, 10000);
 
                 // Save points to server every 5 minutes
@@ -10672,17 +10673,21 @@
             _checkFirstPlay(mode) {
                 if (mode === 'fetch' && !this._firstPlayFetch) {
                     this._firstPlayFetch = true;
-                    this.awardVibes(5);
+                    console.log('[VIBES] first-play-fetch triggered');
+                    this.awardVibes(5, 'first-play-fetch');
                 } else if (mode === 'walkies' && !this._firstPlayWalkies) {
                     this._firstPlayWalkies = true;
-                    this.awardVibes(5);
+                    console.log('[VIBES] first-play-walkies triggered');
+                    this.awardVibes(5, 'first-play-walkies');
                 } else if (mode === 'freeroam' && !this._firstPlayFreeRoam) {
                     this._firstPlayFreeRoam = true;
-                    this.awardVibes(5);
+                    console.log('[VIBES] first-play-freeroam triggered');
+                    this.awardVibes(5, 'first-play-freeroam');
                 }
                 if (!this._allThreePlayed && this._firstPlayFetch && this._firstPlayWalkies && this._firstPlayFreeRoam) {
                     this._allThreePlayed = true;
-                    this.awardVibes(10);
+                    console.log('[VIBES] all-three-played bonus triggered');
+                    this.awardVibes(10, 'all-three-played');
                 }
             }
 
