@@ -365,7 +365,7 @@
 
         /* ── Top bar: lives | distance (hero) | coins ── */
         #walkies-top-bar {
-            position: absolute; top: 40px; left: 0; right: 0;
+            position: absolute; top: 70px; left: 0; right: 0;
             display: flex; justify-content: space-between; align-items: center;
             padding: 14px 16px 0;
             pointer-events: none;
@@ -681,7 +681,7 @@
 
         /* ── Mobile responsive ── */
         @media (max-width: 600px) {
-            #walkies-top-bar { padding: 10px 10px 0; top: 36px; }
+            #walkies-top-bar { padding: 10px 10px 0; top: 66px; }
             #walkies-lives { font-size: 14px; padding: 5px 10px; }
             #walkies-coins-display { font-size: 13px; padding: 5px 12px 5px 10px; }
             #walkies-coins-display .w-coin-icon { width: 18px; height: 18px; font-size: 10px; }
@@ -844,7 +844,7 @@
         #fetch-hud.active { display: block; }
 
         #fetch-score-bar {
-            position: absolute; top: 40px; left: 0; right: 0;
+            position: absolute; top: 70px; left: 0; right: 0;
             display: flex; justify-content: center; align-items: center;
             padding: 14px 16px 0;
             pointer-events: none;
@@ -1303,7 +1303,7 @@
 
         /* Exit button */
         #fr-exit {
-            position: fixed; top: 76px; left: 16px;
+            position: fixed; top: 76px; right: 16px; left: auto;
             background: rgba(0,0,0,0.5); color: #fff;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
@@ -1526,7 +1526,7 @@
 
         /* Mobile adjustments */
         @media (max-width: 600px) {
-            #fr-exit { top: 76px; left: 10px; padding: 6px 10px; font-size: 12px; }
+            #fr-exit { top: 76px; right: 10px; left: auto; padding: 6px 10px; font-size: 12px; }
             #fr-aura-bar { top: 76px; left: 50%; right: auto; transform: translateX(-50%); padding: 4px 12px; font-size: 14px; }
             #fr-aura-bar-inner { width: 50px; }
             #fr-combo { top: 116px; }
