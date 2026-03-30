@@ -3456,9 +3456,10 @@
            WALKIES — Endless Runner Mini-Game (Capybara Edition)
            ═══════════════════════════════════════════════════════════ */
         class WalkiesGame {
-            constructor(renderer, onExit) {
+            constructor(renderer, onExit, onVibes) {
                 this._renderer = renderer;
                 this._onExit = onExit;
+                this._onVibes = onVibes || (() => {});
                 this._isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
                 this._clock = new THREE.Clock();
                 this._running = true;
@@ -5496,6 +5497,12 @@
             /* ── Game over ── */
             _triggerGameOver() {
                 this._gameOver = true;
+                if (this._onVibes) {
+                    const coinVibes = Math.floor(this._coinCount / 10);
+                    const distVibes = Math.floor(this._distance / 500);
+                    const total = Math.min(coinVibes + distVibes, 20);
+                    if (total > 0) this._onVibes(total);
+                }
                 this._playGameOverSound();
                 document.getElementById('walkies-final-dist').textContent = Math.floor(this._distance);
                 document.getElementById('walkies-final-coins').textContent = this._coinCount;
@@ -10948,7 +10955,7 @@
                 this._hatsEnabled = false;
 
                 this._startGameMusic('audio/Walkies Game.mp3');
-                this._walkiesGame = new WalkiesGame(this.renderer, () => this._stopWalkies());
+                this._walkiesGame = new WalkiesGame(this.renderer, () => this._stopWalkies(), (v) => this.awardVibes(v));
             }
 
             _stopWalkies() {
