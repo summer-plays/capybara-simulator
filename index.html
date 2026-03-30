@@ -10488,6 +10488,11 @@
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden && this.playfun) this.playfun.savePoints();
                 });
+
+                this._firstPlayFetch = false;
+                this._firstPlayWalkies = false;
+                this._firstPlayFreeRoam = false;
+                this._allThreePlayed = false;
             }
 
             awardVibes(amount) {
@@ -10503,6 +10508,23 @@
                 if (this.playfun) {
                     this.playfun.addPoints(amount);
                     this.playfun.savePoints();
+                }
+            }
+
+            _checkFirstPlay(mode) {
+                if (mode === 'fetch' && !this._firstPlayFetch) {
+                    this._firstPlayFetch = true;
+                    this.awardVibes(5);
+                } else if (mode === 'walkies' && !this._firstPlayWalkies) {
+                    this._firstPlayWalkies = true;
+                    this.awardVibes(5);
+                } else if (mode === 'freeroam' && !this._firstPlayFreeRoam) {
+                    this._firstPlayFreeRoam = true;
+                    this.awardVibes(5);
+                }
+                if (!this._allThreePlayed && this._firstPlayFetch && this._firstPlayWalkies && this._firstPlayFreeRoam) {
+                    this._allThreePlayed = true;
+                    this.awardVibes(10);
                 }
             }
 
@@ -10901,6 +10923,7 @@
 
             _startWalkies() {
                 if (this._walkiesGame) return;
+                this._checkFirstPlay('walkies');
                 if (this._isSleeping) this._wakeUp();
                 // Hide main simulator UI
                 document.getElementById('hud').style.display = 'none';
@@ -10928,6 +10951,7 @@
 
             _startFetch() {
                 if (this._fetchGame) return;
+                this._checkFirstPlay('fetch');
                 if (this._isSleeping) this._wakeUp();
                 document.getElementById('hud').style.display = 'none';
                 document.getElementById('action-buttons').style.display = 'none';
@@ -11675,6 +11699,7 @@
 
             _startFreeRoam() {
                 if (this._freeRoamGame) return;
+                this._checkFirstPlay('freeroam');
                 if (this._isSleeping) this._wakeUp();
                 document.getElementById('hud').style.display = 'none';
                 document.getElementById('action-buttons').style.display = 'none';
