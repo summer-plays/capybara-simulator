@@ -5681,15 +5681,17 @@
            FREE ROAM MODE — Social open-world with Aura system
            ═══════════════════════════════════════════════════════════ */
         class FreeRoamGame {
-            constructor(renderer, simScene, simModels, onExit, onVibes) {
+            constructor(renderer, simScene, simModels, onExit, onVibes, onVibesBatch) {
                 this._renderer = renderer;
                 this._simScene = simScene;
                 this._simModels = simModels;
                 this._onExit = onExit;
                 this._onVibes = onVibes || (() => {});
+                this._onVibesBatch = onVibesBatch || (() => {});
                 this._poiAuraAccum = 0;
                 this._lastNpcVibeTime = 0;
                 this._auraMilestonesHit = new Set();
+                this._chaosAuraEarned = 0;
                 this._isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
                 this._clock = new THREE.Clock();
                 this._running = true;
@@ -6965,37 +6967,56 @@
                 }
 
                 // Vibe conversion for positive aura
-                if (amount > 0 && this._onVibes) {
+                if (amount > 0) {
                     if (source === 'poi') {
                         this._poiAuraAccum += amount;
                         if (this._poiAuraAccum >= 15) {
                             const vibes = Math.floor(this._poiAuraAccum / 15);
                             this._poiAuraAccum -= vibes * 15;
-                            this._onVibes(vibes);
+                            if (this._onVibes) {
+                                this._onVibes(vibes, 'poi');
+                                console.log('[FREEROAM] POI +' + vibes + ' vibes (accum leftover: ' + this._poiAuraAccum + ')');
+                            }
                         }
-                    } else {
+                    } else if (source === 'npc') {
                         const now = performance.now();
-                        if (source === 'npc' && now - this._lastNpcVibeTime < 8000) {
-                            // NPC cooldown — no vibes
-                        } else {
+                        if (now - this._lastNpcVibeTime >= 8000) {
                             const vibes = Math.max(1, Math.floor(amount / 5));
-                            this._onVibes(vibes);
-                            if (source === 'npc') this._lastNpcVibeTime = now;
+                            if (this._onVibes) {
+                                this._onVibes(vibes, 'npc-success');
+                                console.log('[FREEROAM] NPC +' + vibes + ' vibes (aura: +' + amount + ')');
+                            }
+                            this._lastNpcVibeTime = now;
+                        } else {
+                            console.log('[FREEROAM] NPC aura +' + amount + ' (vibe cooldown active)');
+                        }
+                    } else if (this._chaosActive) {
+                        this._chaosAuraEarned += amount;
+                        console.log('[FREEROAM] chaos aura +' + amount + ' (pending: ' + this._chaosAuraEarned + ')');
+                    } else if (source === 'minigame') {
+                        console.log('[FREEROAM] minigame aura +' + amount + ' (converted on exit)');
+                    } else {
+                        const vibes = Math.max(1, Math.floor(amount / 5));
+                        if (this._onVibes) {
+                            this._onVibes(vibes, source || 'freeroam');
+                            console.log('[FREEROAM] default +' + vibes + ' vibes (aura: +' + amount + ')');
                         }
                     }
                 }
 
-                // Aura milestones
+                // Aura milestones (always real-time)
                 if (this._onVibes) {
                     for (const threshold of [25, 50, 75]) {
                         if (this._aura >= threshold && !this._auraMilestonesHit.has(threshold)) {
                             this._auraMilestonesHit.add(threshold);
-                            this._onVibes(3);
+                            this._onVibes(3, 'milestone-' + threshold);
+                            console.log('[FREEROAM] milestone ' + threshold + ' → +3 vibes');
                         }
                     }
                     if (this._aura >= 100 && !this._auraMilestonesHit.has(100)) {
                         this._auraMilestonesHit.add(100);
-                        this._onVibes(10);
+                        this._onVibes(10, 'milestone-100');
+                        console.log('[FREEROAM] milestone 100 (Peak) → +10 vibes');
                     }
                 }
 
@@ -7559,6 +7580,12 @@
 
             _endChaos() {
                 this._chaosActive = false;
+                if (this._chaosAuraEarned > 0 && this._onVibesBatch) {
+                    const vibes = Math.max(1, Math.floor(this._chaosAuraEarned / 5));
+                    console.log('[FREEROAM] chaos ended — converting ' + this._chaosAuraEarned + ' aura → ' + vibes + ' vibes');
+                    this._onVibesBatch(vibes, 'chaos-' + (this._chaosType || 'unknown'));
+                }
+                this._chaosAuraEarned = 0;
                 this._fovTarget = this._peakMode ? 62 : 55;
                 document.getElementById('fr-event-banner').classList.remove('visible');
                 if (this._chaosData.croc) {
@@ -7716,8 +7743,20 @@
                 const earned = this._miniGameData._auraEarned || 0;
                 this._miniGameData = {};
                 if (earned > 0) {
-                    this._changeAura(earned, 'minigame');
+                    this._aura += earned;
+                    const el = document.createElement('div');
+                    el.className = 'fr-float-text positive';
+                    el.textContent = '+' + earned;
+                    el.style.left = '50%'; el.style.top = '35%';
+                    document.getElementById('fr-hud').appendChild(el);
+                    setTimeout(() => el.remove(), 1300);
                     this._showOutcome('🎮 +' + earned + ' Aura from mini-game!');
+                    const vibes = Math.min(Math.max(1, Math.floor(earned / 5)), 8);
+                    if (this._onVibesBatch) {
+                        console.log('[FREEROAM] minigame ended — converting ' + earned + ' aura → ' + vibes + ' vibes');
+                        this._onVibesBatch(vibes, 'minigame');
+                    }
+                    if (this._aura >= 100 && !this._peakMode) this._enterPeakState();
                 }
             }
 
@@ -11834,7 +11873,8 @@
                     this.scene,
                     this.models,
                     () => this._stopFreeRoam(),
-                    (v) => this.awardVibes(v)
+                    (v, s) => this.awardVibes(v, s),
+                    (v, s) => this.awardVibesBatch(v, s)
                 );
             }
 
