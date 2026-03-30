@@ -31,17 +31,25 @@
             display: none; justify-content: space-between; align-items: flex-start;
         }
         @media (max-width: 600px) {
-            #points { font-size: 12px; padding: 3px 10px; top: 70px; }
+            #points { font-size: 12px; padding: 3px 10px; }
+            #persistent-hud { top: 70px; }
             #points span { font-size: 14px; }
             #music-controls { gap: 5px; }
             #music-controls button { width: 30px; height: 30px; }
             #music-controls button svg { width: 14px; height: 14px; }
         }
-        #points {
+        #persistent-hud {
             position: fixed;
-            top: 60px;
+            top: 55px;
             left: 10px;
             z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+        #points {
+            pointer-events: all;
             color: rgba(255,255,255,0.75);
             text-shadow: 0 1px 4px rgba(0,0,0,0.3);
             background: rgba(255,255,255,0.15);
@@ -49,6 +57,7 @@
             border-radius: 20px;
             padding: 5px 14px;
             backdrop-filter: blur(8px);
+            width: fit-content;
         }
         #points span { font-weight: 500; font-size: 17px; }
         @keyframes vibeFlash {
@@ -61,6 +70,7 @@
         #music-controls {
             pointer-events: all;
             display: flex; gap: 8px; align-items: center;
+            width: fit-content;
         }
         #music-controls button {
             background: rgba(255,255,255,0.15);
@@ -1663,12 +1673,15 @@
     </script>
 </head>
 <body>
-    <div id="points" style="display:none;"><span id="score">0</span> vibes</div>
-    <div id="hud" style="display:none;">
+    <div id="persistent-hud" style="display:none;">
+        <div id="points"><span id="score">0</span> vibes</div>
         <div id="music-controls">
             <button id="btn-skip" title="Skip track"><svg viewBox="0 0 24 24"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
             <button id="btn-mute" title="Mute/Unmute"><svg viewBox="0 0 24 24"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></button>
             <button id="btn-rain" title="Toggle rain"><svg viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><line x1="8" y1="16" x2="8" y2="20"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="16" y1="16" x2="16" y2="20"/></svg></button>
+        </div>
+    </div>
+    <div id="hud" style="display:none;">
         </div>
     </div>
     <div id="action-buttons">
@@ -10340,7 +10353,7 @@
                 loadingEl.classList.add('fade-out');
                 setTimeout(() => { loadingEl.style.display = 'none'; }, 700);
                 document.getElementById('hud').style.display = 'flex';
-                document.getElementById('points').style.display = '';
+                document.getElementById('persistent-hud').style.display = 'flex';
                 this.setupPoints();
                 this.setupWeather();
                 this.setupActionButtons();
