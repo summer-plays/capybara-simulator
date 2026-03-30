@@ -5668,11 +5668,15 @@
            FREE ROAM MODE — Social open-world with Aura system
            ═══════════════════════════════════════════════════════════ */
         class FreeRoamGame {
-            constructor(renderer, simScene, simModels, onExit) {
+            constructor(renderer, simScene, simModels, onExit, onVibes) {
                 this._renderer = renderer;
                 this._simScene = simScene;
                 this._simModels = simModels;
                 this._onExit = onExit;
+                this._onVibes = onVibes || (() => {});
+                this._poiAuraAccum = 0;
+                this._lastNpcVibeTime = 0;
+                this._auraMilestonesHit = new Set();
                 this._isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
                 this._clock = new THREE.Clock();
                 this._running = true;
@@ -6886,7 +6890,7 @@
                     const comboMult = 1 + this._combo * 0.3;
                     let gain = Math.round((crit ? 15 : 8) * comboMult);
                     if (this._peakMode) gain = Math.round(gain * 1.5);
-                    this._changeAura(gain);
+                    this._changeAura(gain, 'npc');
                     this._combo++;
                     this._comboTimer = this._comboDuration;
 
@@ -6909,7 +6913,7 @@
                     if (this._peakMode || crit) npc.followPlayer = true;
                 } else {
                     const loss = -6;
-                    this._changeAura(loss);
+                    this._changeAura(loss, 'npc');
                     this._combo = 0;
                     this._comboTimer = 0;
 
@@ -6929,7 +6933,7 @@
             }
 
             // ── AURA ──
-            _changeAura(amount) {
+            _changeAura(amount, source) {
                 this._aura += amount;
                 if (this._aura < 0) this._aura = 0;
                 // Floating text
@@ -6945,6 +6949,41 @@
                     const pos = this._playerPos.clone();
                     pos.y += 0.6;
                     this._spawnParticleBurst(pos, amount >= 10 ? 0xffdd44 : 0x88ffaa, Math.min(15, Math.abs(amount)), 1.5);
+                }
+
+                // Vibe conversion for positive aura
+                if (amount > 0 && this._onVibes) {
+                    if (source === 'poi') {
+                        this._poiAuraAccum += amount;
+                        if (this._poiAuraAccum >= 15) {
+                            const vibes = Math.floor(this._poiAuraAccum / 15);
+                            this._poiAuraAccum -= vibes * 15;
+                            this._onVibes(vibes);
+                        }
+                    } else {
+                        const now = performance.now();
+                        if (source === 'npc' && now - this._lastNpcVibeTime < 8000) {
+                            // NPC cooldown — no vibes
+                        } else {
+                            const vibes = Math.max(1, Math.floor(amount / 5));
+                            this._onVibes(vibes);
+                            if (source === 'npc') this._lastNpcVibeTime = now;
+                        }
+                    }
+                }
+
+                // Aura milestones
+                if (this._onVibes) {
+                    for (const threshold of [25, 50, 75]) {
+                        if (this._aura >= threshold && !this._auraMilestonesHit.has(threshold)) {
+                            this._auraMilestonesHit.add(threshold);
+                            this._onVibes(3);
+                        }
+                    }
+                    if (this._aura >= 100 && !this._auraMilestonesHit.has(100)) {
+                        this._auraMilestonesHit.add(100);
+                        this._onVibes(10);
+                    }
                 }
 
                 // Check peak state
@@ -7664,7 +7703,7 @@
                 const earned = this._miniGameData._auraEarned || 0;
                 this._miniGameData = {};
                 if (earned > 0) {
-                    this._changeAura(earned);
+                    this._changeAura(earned, 'minigame');
                     this._showOutcome('🎮 +' + earned + ' Aura from mini-game!');
                 }
             }
@@ -9125,7 +9164,7 @@
                         this._chillAuraTick += delta;
                         if (this._chillAuraTick > 3) {
                             this._chillAuraTick = 0;
-                            this._changeAura(2);
+                            this._changeAura(2, 'poi');
                             this._addChatMsg(this._randomChatName(), 'certified chill spot 😌');
                         }
                     } else {
@@ -9139,7 +9178,7 @@
                         this._campfireAuraTick += delta;
                         if (this._campfireAuraTick > 4) {
                             this._campfireAuraTick = 0;
-                            this._changeAura(3);
+                            this._changeAura(3, 'poi');
                             this._addChatMsg(this._randomChatName(), 'campfire vibes 🔥');
                         }
                         // Crackle sound
@@ -9155,7 +9194,7 @@
                         this._gardenAuraTick += delta;
                         if (this._gardenAuraTick > 5) {
                             this._gardenAuraTick = 0;
-                            this._changeAura(2);
+                            this._changeAura(2, 'poi');
                             this._addChatMsg(this._randomChatName(), 'nature therapy 🌸');
                         }
                     } else {
@@ -11734,7 +11773,8 @@
                     this.renderer,
                     this.scene,
                     this.models,
-                    () => this._stopFreeRoam()
+                    () => this._stopFreeRoam(),
+                    (v) => this.awardVibes(v)
                 );
             }
 
