@@ -10559,23 +10559,66 @@
                 this._allThreePlayed = false;
             }
 
+            _playPlim() {
+                if (!this._sfxCtx) this._ensureSFX();
+                if (!this._sfxCtx) return;
+                const ctx = this._sfxCtx;
+                const t = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = 880 + (this.score % 12) * 40;
+                gain.gain.setValueAtTime(0.12, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+                osc.connect(gain);
+                gain.connect(this._sfxGain);
+                osc.start(t);
+                osc.stop(t + 0.08);
+            }
+
+            _vibeFlash() {
+                const el = document.getElementById('points');
+                el.classList.remove('vibe-flash');
+                void el.offsetWidth;
+                el.classList.add('vibe-flash');
+            }
+
             awardVibes(amount, source) {
                 if (amount <= 0) return;
                 this.score += amount;
                 this.scoreEl.textContent = this.score;
                 console.log('[VIBES] +' + amount + ' from ' + (source || 'unknown') + ' | total: ' + this.score);
-                // Green flash
-                const el = document.getElementById('points');
-                el.style.display = '';
-                el.classList.remove('vibe-flash');
-                void el.offsetWidth;
-                el.classList.add('vibe-flash');
-                // Play.fun SDK
+                this._vibeFlash();
+                this._playPlim();
                 if (this.playfun) {
                     this.playfun.addPoints(amount);
                     this.playfun.savePoints();
                     console.log('[VIBES] savePoints fired');
                 }
+            }
+
+            awardVibesBatch(total, source) {
+                if (total <= 0) return;
+                console.log('[VIBES] batch start +' + total + ' from ' + (source || 'unknown'));
+                let awarded = 0;
+                const tick = () => {
+                    awarded++;
+                    this.score++;
+                    this.scoreEl.textContent = this.score;
+                    this._vibeFlash();
+                    this._playPlim();
+                    if (this.playfun) this.playfun.addPoints(1);
+                    if (awarded >= total) {
+                        if (this.playfun) {
+                            this.playfun.savePoints();
+                            console.log('[VIBES] savePoints fired after batch');
+                        }
+                        console.log('[VIBES] batch done +' + total + ' from ' + (source || 'unknown') + ' | total: ' + this.score);
+                    } else {
+                        setTimeout(tick, 100);
+                    }
+                };
+                tick();
             }
 
             _checkFirstPlay(mode) {
