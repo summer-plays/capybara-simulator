@@ -31,13 +31,17 @@
             display: none; justify-content: space-between; align-items: flex-start;
         }
         @media (max-width: 600px) {
-            #points { font-size: 12px; padding: 3px 10px; }
+            #points { font-size: 12px; padding: 3px 10px; top: 70px; }
             #points span { font-size: 14px; }
             #music-controls { gap: 5px; }
             #music-controls button { width: 30px; height: 30px; }
             #music-controls button svg { width: 14px; height: 14px; }
         }
         #points {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
             color: rgba(255,255,255,0.75);
             text-shadow: 0 1px 4px rgba(0,0,0,0.3);
             background: rgba(255,255,255,0.15);
@@ -1659,8 +1663,8 @@
     </script>
 </head>
 <body>
+    <div id="points" style="display:none;"><span id="score">0</span> vibes</div>
     <div id="hud" style="display:none;">
-        <div id="points"><span id="score">0</span> vibes</div>
         <div id="music-controls">
             <button id="btn-skip" title="Skip track"><svg viewBox="0 0 24 24"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
             <button id="btn-mute" title="Mute/Unmute"><svg viewBox="0 0 24 24"><polygon points="11,5 6,9 2,9 2,15 6,15 11,19"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg></button>
@@ -10290,6 +10294,7 @@
                 loadingEl.classList.add('fade-out');
                 setTimeout(() => { loadingEl.style.display = 'none'; }, 700);
                 document.getElementById('hud').style.display = 'flex';
+                document.getElementById('points').style.display = '';
                 this.setupPoints();
                 this.setupWeather();
                 this.setupActionButtons();
@@ -10554,12 +10559,14 @@
                 this._allThreePlayed = false;
             }
 
-            awardVibes(amount) {
+            awardVibes(amount, source) {
                 if (amount <= 0) return;
                 this.score += amount;
                 this.scoreEl.textContent = this.score;
+                console.log('[VIBES] +' + amount + ' from ' + (source || 'unknown') + ' | total: ' + this.score);
                 // Green flash
                 const el = document.getElementById('points');
+                el.style.display = '';
                 el.classList.remove('vibe-flash');
                 void el.offsetWidth;
                 el.classList.add('vibe-flash');
@@ -10567,6 +10574,7 @@
                 if (this.playfun) {
                     this.playfun.addPoints(amount);
                     this.playfun.savePoints();
+                    console.log('[VIBES] savePoints fired');
                 }
             }
 
