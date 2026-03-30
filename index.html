@@ -6979,6 +6979,7 @@
 
                 // Vibe conversion for positive aura
                 if (amount > 0) {
+                    console.log('[FREEROAM] _changeAura +' + amount + ' source=' + source + ' chaosActive=' + this._chaosActive + ' onVibes=' + (typeof this._onVibes) + ' onVibesBatch=' + (typeof this._onVibesBatch));
                     if (source === 'poi') {
                         this._poiAuraAccum += amount;
                         if (this._poiAuraAccum >= 15) {
