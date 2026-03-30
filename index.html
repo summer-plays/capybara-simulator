@@ -39,7 +39,7 @@
         }
         #points {
             position: fixed;
-            top: 10px;
+            top: 60px;
             left: 10px;
             z-index: 1000;
             color: rgba(255,255,255,0.75);
@@ -5510,11 +5510,9 @@
                 if (this._onVibesBatch) {
                     const coinVibes = Math.floor(this._coinCount / 10);
                     const distVibes = Math.floor(this._distance / 500);
-                    const total = Math.min(coinVibes + distVibes, 20);
-                    if (total > 0) {
-                        console.log('[WALKIES] game over — converting ' + total + ' vibes (coins: ' + this._coinCount + ', dist: ' + Math.floor(this._distance) + ')');
-                        this._onVibesBatch(total, 'walkies-gameover');
-                    }
+                    const total = Math.min(Math.max(coinVibes + distVibes, 1), 20);
+                    console.log('[WALKIES] game over — converting ' + total + ' vibes (coins: ' + this._coinCount + ', dist: ' + Math.floor(this._distance) + ')');
+                    this._onVibesBatch(total, 'walkies-gameover');
                 }
                 this._playGameOverSound();
                 document.getElementById('walkies-final-dist').textContent = Math.floor(this._distance);
