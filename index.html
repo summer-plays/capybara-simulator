@@ -3466,10 +3466,10 @@
            WALKIES — Endless Runner Mini-Game (Capybara Edition)
            ═══════════════════════════════════════════════════════════ */
         class WalkiesGame {
-            constructor(renderer, onExit, onVibes) {
+            constructor(renderer, onExit, onVibesBatch) {
                 this._renderer = renderer;
                 this._onExit = onExit;
-                this._onVibes = onVibes || (() => {});
+                this._onVibesBatch = onVibesBatch || (() => {});
                 this._isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
                 this._clock = new THREE.Clock();
                 this._running = true;
@@ -5507,11 +5507,14 @@
             /* ── Game over ── */
             _triggerGameOver() {
                 this._gameOver = true;
-                if (this._onVibes) {
+                if (this._onVibesBatch) {
                     const coinVibes = Math.floor(this._coinCount / 10);
                     const distVibes = Math.floor(this._distance / 500);
                     const total = Math.min(coinVibes + distVibes, 20);
-                    if (total > 0) this._onVibes(total);
+                    if (total > 0) {
+                        console.log('[WALKIES] game over — converting ' + total + ' vibes (coins: ' + this._coinCount + ', dist: ' + Math.floor(this._distance) + ')');
+                        this._onVibesBatch(total, 'walkies-gameover');
+                    }
                 }
                 this._playGameOverSound();
                 document.getElementById('walkies-final-dist').textContent = Math.floor(this._distance);
@@ -11051,7 +11054,7 @@
                 this._hatsEnabled = false;
 
                 this._startGameMusic('audio/Walkies Game.mp3');
-                this._walkiesGame = new WalkiesGame(this.renderer, () => this._stopWalkies(), (v) => this.awardVibes(v));
+                this._walkiesGame = new WalkiesGame(this.renderer, () => this._stopWalkies(), (v, s) => this.awardVibesBatch(v, s));
             }
 
             _stopWalkies() {
