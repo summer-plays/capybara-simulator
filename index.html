@@ -1858,10 +1858,11 @@
            CAP-O-FETCH — Stick Fetch Mini-Game
            ═══════════════════════════════════════════════════════════ */
         class FetchGame {
-            constructor(renderer, onExit, onVibes) {
+            constructor(renderer, onExit, onVibesBatch) {
                 this._renderer = renderer;
                 this._onExit = onExit;
-                this._onVibes = onVibes || (() => {});
+                this._onVibesBatch = onVibesBatch || (() => {});
+                this._vibesEarned = 0;
                 this._isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.maxTouchPoints > 1;
                 this._clock = new THREE.Clock();
                 this._running = true;
@@ -3358,7 +3359,7 @@
                         const bullseyeBonus = this._lastBullseye ? 1 : 0;
                         const pts = basePts + streakBonus + bullseyeBonus;
                         this._score += pts;
-                        if (this._onVibes) {
+                        if (this._onVibesBatch) {
                             const throwOrigin = this._capyHomePos;
                             const landPos = this._stickLandPos;
                             const throwDist = throwOrigin.distanceTo(landPos);
@@ -3367,7 +3368,8 @@
                                 if (this._lastThrowInTarget) vibes = 2;
                                 if (this._lastThrowInTarget && this._streak >= 3) vibes = 3;
                                 if (this._lastBullseye) vibes += 1;
-                                this._onVibes(vibes);
+                                this._vibesEarned += vibes;
+                                console.log('[FETCH] +' + vibes + ' vibes earned (total pending: ' + this._vibesEarned + ')');
                             }
                         }
                         this._updateHUD();
@@ -3447,6 +3449,10 @@
                 document.getElementById('fetch-aim-wrap').classList.remove('visible');
                 document.getElementById('fetch-sprint').classList.remove('visible', 'active');
                 document.getElementById('fetch-streak').classList.remove('visible');
+                if (this._onVibesBatch && this._vibesEarned > 0) {
+                    console.log('[FETCH] exiting — converting ' + this._vibesEarned + ' vibes');
+                    this._onVibesBatch(this._vibesEarned, 'fetch-exit');
+                }
                 if (this._onExit) this._onExit();
             }
 
@@ -11071,7 +11077,7 @@
                 this.controls.enabled = false;
                 this._hatsEnabled = false;
 
-                this._fetchGame = new FetchGame(this.renderer, () => this._stopFetch(), (v) => this.awardVibes(v));
+                this._fetchGame = new FetchGame(this.renderer, () => this._stopFetch(), (v, s) => this.awardVibesBatch(v, s));
             }
 
             _stopFetch() {
