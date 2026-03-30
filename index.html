@@ -3382,7 +3382,7 @@
                                 if (this._lastThrowInTarget && this._streak >= 3) vibes = 3;
                                 if (this._lastBullseye) vibes += 1;
                                 this._vibesEarned += vibes;
-                                console.log('[FETCH] +' + vibes + ' vibes earned (total pending: ' + this._vibesEarned + ')');
+                                if (window.game && window.game.debug) console.log('[FETCH] +' + vibes + ' vibes earned (total pending: ' + this._vibesEarned + ')');
                             }
                         }
                         this._updateHUD();
@@ -3463,7 +3463,7 @@
                 document.getElementById('fetch-sprint').classList.remove('visible', 'active');
                 document.getElementById('fetch-streak').classList.remove('visible');
                 if (this._onVibesBatch && this._vibesEarned > 0) {
-                    console.log('[FETCH] exiting — converting ' + this._vibesEarned + ' vibes');
+                    if (window.game && window.game.debug) console.log('[FETCH] exiting — converting ' + this._vibesEarned + ' vibes');
                     this._onVibesBatch(this._vibesEarned, 'fetch-exit');
                 }
                 if (this._onExit) this._onExit();
@@ -5524,7 +5524,7 @@
                     const coinVibes = Math.floor(this._coinCount / 10);
                     const distVibes = Math.floor(this._distance / 500);
                     const total = Math.min(Math.max(coinVibes + distVibes, 1), 20);
-                    console.log('[WALKIES] game over — converting ' + total + ' vibes (coins: ' + this._coinCount + ', dist: ' + Math.floor(this._distance) + ')');
+                    if (window.game && window.game.debug) console.log('[WALKIES] game over — converting ' + total + ' vibes (coins: ' + this._coinCount + ', dist: ' + Math.floor(this._distance) + ')');
                     this._onVibesBatch(total, 'walkies-gameover');
                 }
                 this._playGameOverSound();
@@ -6979,7 +6979,7 @@
 
                 // Vibe conversion for positive aura
                 if (amount > 0) {
-                    console.log('[FREEROAM] _changeAura +' + amount + ' source=' + source + ' chaosActive=' + this._chaosActive + ' onVibes=' + (typeof this._onVibes) + ' onVibesBatch=' + (typeof this._onVibesBatch));
+                    if (window.game && window.game.debug) console.log('[FREEROAM] _changeAura +' + amount + ' source=' + source + ' chaosActive=' + this._chaosActive + ' onVibes=' + (typeof this._onVibes) + ' onVibesBatch=' + (typeof this._onVibesBatch));
                     if (source === 'poi') {
                         this._poiAuraAccum += amount;
                         if (this._poiAuraAccum >= 15) {
@@ -6987,7 +6987,7 @@
                             this._poiAuraAccum -= vibes * 15;
                             if (this._onVibes) {
                                 this._onVibes(vibes, 'poi');
-                                console.log('[FREEROAM] POI +' + vibes + ' vibes (accum leftover: ' + this._poiAuraAccum + ')');
+                                if (window.game && window.game.debug) console.log('[FREEROAM] POI +' + vibes + ' vibes (accum leftover: ' + this._poiAuraAccum + ')');
                             }
                         }
                     } else if (source === 'npc') {
@@ -6996,22 +6996,22 @@
                             const vibes = Math.max(1, Math.floor(amount / 5));
                             if (this._onVibes) {
                                 this._onVibes(vibes, 'npc-success');
-                                console.log('[FREEROAM] NPC +' + vibes + ' vibes (aura: +' + amount + ')');
+                                if (window.game && window.game.debug) console.log('[FREEROAM] NPC +' + vibes + ' vibes (aura: +' + amount + ')');
                             }
                             this._lastNpcVibeTime = now;
                         } else {
-                            console.log('[FREEROAM] NPC aura +' + amount + ' (vibe cooldown active)');
+                            if (window.game && window.game.debug) console.log('[FREEROAM] NPC aura +' + amount + ' (vibe cooldown active)');
                         }
                     } else if (this._chaosActive) {
                         this._chaosAuraEarned += amount;
-                        console.log('[FREEROAM] chaos aura +' + amount + ' (pending: ' + this._chaosAuraEarned + ')');
+                        if (window.game && window.game.debug) console.log('[FREEROAM] chaos aura +' + amount + ' (pending: ' + this._chaosAuraEarned + ')');
                     } else if (source === 'minigame') {
-                        console.log('[FREEROAM] minigame aura +' + amount + ' (converted on exit)');
+                        if (window.game && window.game.debug) console.log('[FREEROAM] minigame aura +' + amount + ' (converted on exit)');
                     } else {
                         const vibes = Math.max(1, Math.floor(amount / 5));
                         if (this._onVibes) {
                             this._onVibes(vibes, source || 'freeroam');
-                            console.log('[FREEROAM] default +' + vibes + ' vibes (aura: +' + amount + ')');
+                            if (window.game && window.game.debug) console.log('[FREEROAM] default +' + vibes + ' vibes (aura: +' + amount + ')');
                         }
                     }
                 }
@@ -7022,13 +7022,13 @@
                         if (this._aura >= threshold && !this._auraMilestonesHit.has(threshold)) {
                             this._auraMilestonesHit.add(threshold);
                             this._onVibes(3, 'milestone-' + threshold);
-                            console.log('[FREEROAM] milestone ' + threshold + ' → +3 vibes');
+                            if (window.game && window.game.debug) console.log('[FREEROAM] milestone ' + threshold + ' → +3 vibes');
                         }
                     }
                     if (this._aura >= 100 && !this._auraMilestonesHit.has(100)) {
                         this._auraMilestonesHit.add(100);
                         this._onVibes(10, 'milestone-100');
-                        console.log('[FREEROAM] milestone 100 (Peak) → +10 vibes');
+                        if (window.game && window.game.debug) console.log('[FREEROAM] milestone 100 (Peak) → +10 vibes');
                     }
                 }
 
@@ -7594,7 +7594,7 @@
                 this._chaosActive = false;
                 if (this._chaosAuraEarned > 0 && this._onVibesBatch) {
                     const vibes = Math.max(1, Math.floor(this._chaosAuraEarned / 5));
-                    console.log('[FREEROAM] chaos ended — converting ' + this._chaosAuraEarned + ' aura → ' + vibes + ' vibes');
+                    if (window.game && window.game.debug) console.log('[FREEROAM] chaos ended — converting ' + this._chaosAuraEarned + ' aura → ' + vibes + ' vibes');
                     this._onVibesBatch(vibes, 'chaos-' + (this._chaosType || 'unknown'));
                 }
                 this._chaosAuraEarned = 0;
@@ -7765,7 +7765,7 @@
                     this._showOutcome('🎮 +' + earned + ' Aura from mini-game!');
                     const vibes = Math.min(Math.max(1, Math.floor(earned / 5)), 8);
                     if (this._onVibesBatch) {
-                        console.log('[FREEROAM] minigame ended — converting ' + earned + ' aura → ' + vibes + ' vibes');
+                        if (window.game && window.game.debug) console.log('[FREEROAM] minigame ended — converting ' + earned + ' aura → ' + vibes + ' vibes');
                         this._onVibesBatch(vibes, 'minigame');
                     }
                     if (this._aura >= 100 && !this._peakMode) this._enterPeakState();
@@ -10570,7 +10570,10 @@
                 }
             }
 
+            _dbg() { return this.debug || new URLSearchParams(window.location.search).has('debug'); }
+
             async setupPoints() {
+                this.debug = false;
                 this.score = 0;
                 this.scoreEl = document.getElementById('score');
 
@@ -10597,7 +10600,7 @@
                     this.score++;
                     this.scoreEl.textContent = this.score;
                     if (this.playfun) this.playfun.addPoints(1);
-                    console.log('[VIBES] +1 from passive | total: ' + this.score);
+                    if (this._dbg()) console.log('[VIBES] +1 from passive | total: ' + this.score);
                 }, 10000);
 
                 // Save points to server every 5 minutes
@@ -10648,19 +10651,19 @@
                 if (amount <= 0) return;
                 this.score += amount;
                 this.scoreEl.textContent = this.score;
-                console.log('[VIBES] +' + amount + ' from ' + (source || 'unknown') + ' | total: ' + this.score);
+                if (this._dbg()) console.log('[VIBES] +' + amount + ' from ' + (source || 'unknown') + ' | total: ' + this.score);
                 this._vibeFlash();
                 this._playPlim();
                 if (this.playfun) {
                     this.playfun.addPoints(amount);
                     this.playfun.savePoints();
-                    console.log('[VIBES] savePoints fired');
+                    if (this._dbg()) console.log('[VIBES] savePoints fired');
                 }
             }
 
             awardVibesBatch(total, source) {
                 if (total <= 0) return;
-                console.log('[VIBES] batch start +' + total + ' from ' + (source || 'unknown'));
+                if (this._dbg()) console.log('[VIBES] batch start +' + total + ' from ' + (source || 'unknown'));
                 let awarded = 0;
                 const tick = () => {
                     awarded++;
@@ -10672,9 +10675,9 @@
                     if (awarded >= total) {
                         if (this.playfun) {
                             this.playfun.savePoints();
-                            console.log('[VIBES] savePoints fired after batch');
+                            if (this._dbg()) console.log('[VIBES] savePoints fired after batch');
                         }
-                        console.log('[VIBES] batch done +' + total + ' from ' + (source || 'unknown') + ' | total: ' + this.score);
+                        if (this._dbg()) console.log('[VIBES] batch done +' + total + ' from ' + (source || 'unknown') + ' | total: ' + this.score);
                     } else {
                         setTimeout(tick, 100);
                     }
@@ -10685,20 +10688,20 @@
             _checkFirstPlay(mode) {
                 if (mode === 'fetch' && !this._firstPlayFetch) {
                     this._firstPlayFetch = true;
-                    console.log('[VIBES] first-play-fetch triggered');
+                    if (this._dbg()) console.log('[VIBES] first-play-fetch triggered');
                     this.awardVibes(5, 'first-play-fetch');
                 } else if (mode === 'walkies' && !this._firstPlayWalkies) {
                     this._firstPlayWalkies = true;
-                    console.log('[VIBES] first-play-walkies triggered');
+                    if (this._dbg()) console.log('[VIBES] first-play-walkies triggered');
                     this.awardVibes(5, 'first-play-walkies');
                 } else if (mode === 'freeroam' && !this._firstPlayFreeRoam) {
                     this._firstPlayFreeRoam = true;
-                    console.log('[VIBES] first-play-freeroam triggered');
+                    if (this._dbg()) console.log('[VIBES] first-play-freeroam triggered');
                     this.awardVibes(5, 'first-play-freeroam');
                 }
                 if (!this._allThreePlayed && this._firstPlayFetch && this._firstPlayWalkies && this._firstPlayFreeRoam) {
                     this._allThreePlayed = true;
-                    console.log('[VIBES] all-three-played bonus triggered');
+                    if (this._dbg()) console.log('[VIBES] all-three-played bonus triggered');
                     this.awardVibes(10, 'all-three-played');
                 }
             }
