@@ -1186,7 +1186,7 @@
 
         /* Aura bar */
         #fr-aura-bar {
-            position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
+            position: fixed; top: 76px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
             border-radius: 20px; padding: 6px 18px;
             display: flex; align-items: center; gap: 8px;
@@ -1209,7 +1209,7 @@
         /* Combo indicator */
         #fr-combo {
             display: none;
-            position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
+            position: fixed; top: 110px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(135deg, rgba(255,100,0,0.85), rgba(255,50,50,0.85));
             color: #fff;
             border-radius: 12px; padding: 5px 16px;
@@ -1225,7 +1225,7 @@
         /* Game direction indicator */
         #fr-hub-compass {
             position: fixed;
-            top: 108px;
+            top: 128px;
             left: 50%;
             transform: translateX(-50%);
             display: none;
@@ -1257,7 +1257,7 @@
         }
         #fr-game-hint {
             position: fixed;
-            top: 144px;
+            top: 164px;
             left: 50%;
             transform: translateX(-50%);
             display: none;
@@ -1303,7 +1303,7 @@
 
         /* Exit button */
         #fr-exit {
-            position: fixed; top: 56px; left: 16px;
+            position: fixed; top: 76px; left: 16px;
             background: rgba(0,0,0,0.5); color: #fff;
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
@@ -1447,7 +1447,7 @@
         /* Event banner */
         #fr-event-banner {
             display: none;
-            position: fixed; top: 110px; left: 50%; transform: translateX(-50%);
+            position: fixed; top: 130px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(135deg, rgba(200,50,50,0.9), rgba(180,30,80,0.9));
             color: #fff;
             border-radius: 14px; padding: 10px 24px;
@@ -1526,12 +1526,12 @@
 
         /* Mobile adjustments */
         @media (max-width: 600px) {
-            #fr-exit { top: 56px; left: 10px; padding: 6px 10px; font-size: 12px; }
-            #fr-aura-bar { top: 56px; left: 50%; right: auto; transform: translateX(-50%); padding: 4px 12px; font-size: 14px; }
+            #fr-exit { top: 76px; left: 10px; padding: 6px 10px; font-size: 12px; }
+            #fr-aura-bar { top: 76px; left: 50%; right: auto; transform: translateX(-50%); padding: 4px 12px; font-size: 14px; }
             #fr-aura-bar-inner { width: 50px; }
-            #fr-combo { top: 96px; }
-            #fr-hub-compass { top: 104px; font-size: 11px; padding: 5px 10px; max-width: 88vw; }
-            #fr-game-hint { top: 136px; font-size: 11px; max-width: 90vw; white-space: normal; text-align: center; }
+            #fr-combo { top: 116px; }
+            #fr-hub-compass { top: 124px; font-size: 11px; padding: 5px 10px; max-width: 88vw; }
+            #fr-game-hint { top: 156px; font-size: 11px; max-width: 90vw; white-space: normal; text-align: center; }
             #fr-mg-touch-hint { left: 12px; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); max-width: 150px; font-size: 10px; padding: 7px 9px; }
             #fr-cup-ui { bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
             #fr-cup-instruction { font-size: 16px; margin-bottom: 10px; }
@@ -1545,7 +1545,7 @@
             #fr-interact { right: 8px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
             #fr-npc-target { right: 8px; bottom: calc(165px + env(safe-area-inset-bottom, 0px)); }
             .fr-choice-btn { padding: 6px 12px; font-size: 12px; }
-            #fr-event-banner { top: 100px; font-size: 14px; padding: 8px 18px; max-width: 90vw; }
+            #fr-event-banner { top: 120px; font-size: 14px; padding: 8px 18px; max-width: 90vw; }
         }
 
         /* ── Game Hub Popup ── */
