@@ -123,6 +123,27 @@
         #btn-biome:active { transform: scale(0.95); }
         #btn-biome.loaded { background: rgba(100, 200, 140, 0.3); border-color: rgba(100, 220, 160, 0.4); }
 
+        #biome-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 2000;
+            display: none;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #biome-toast.error { border-color: rgba(255,80,80,0.4); color: #ff8888; }
+        #biome-toast.success { border-color: rgba(80,255,120,0.4); color: #88ff88; }
+
         /* ── ACTION BUTTONS (bottom bar) ── */
         #action-buttons {
             position: fixed; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
@@ -1707,6 +1728,7 @@
     </div>
     <button id="btn-biome" style="display:none;" title="Upload Biome">Upload Biome</button>
     <input type="file" id="biome-file-input" accept=".glb" style="display:none;">
+    <div id="biome-toast"></div>
     <div id="hud" style="display:none;">
         </div>
     </div>
@@ -10602,6 +10624,72 @@
             }
 
             _dbg() { return this.debug || new URLSearchParams(window.location.search).has('debug'); }
+
+            _showBiomeToast(msg, type) {
+                const el = document.getElementById('biome-toast');
+                el.textContent = msg;
+                el.className = type || '';
+                el.style.display = '';
+                clearTimeout(this._biomeToastTimer);
+                this._biomeToastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+            }
+
+            _validateBiomeGLB(gltf) {
+                const scene = gltf.scene;
+                let totalVertices = 0;
+                const textures = new Set();
+                let hasGroundPlane = false;
+                let textureTooLarge = null;
+
+                if (gltf.animations) gltf.animations = [];
+
+                const toRemove = [];
+                scene.traverse(c => {
+                    if (c.isCamera || c.isLight) { toRemove.push(c); return; }
+                    if (!c.isMesh) return;
+
+                    const geo = c.geometry;
+                    if (geo && geo.attributes.position) {
+                        totalVertices += geo.attributes.position.count;
+                    }
+
+                    const mats = Array.isArray(c.material) ? c.material : [c.material];
+                    for (const mat of mats) {
+                        for (const key of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap']) {
+                            const tex = mat[key];
+                            if (tex && tex.image && !textures.has(tex.uuid)) {
+                                textures.add(tex.uuid);
+                                if ((tex.image.width > 2048 || tex.image.height > 2048) && !textureTooLarge) {
+                                    textureTooLarge = tex.image.width + 'x' + tex.image.height;
+                                }
+                            }
+                        }
+                    }
+
+                    const box = new THREE.Box3().setFromObject(c);
+                    const size = box.getSize(new THREE.Vector3());
+                    if (box.min.y < 0.5 && size.x >= 20 && size.z >= 20) {
+                        hasGroundPlane = true;
+                    }
+                });
+                for (const obj of toRemove) { if (obj.parent) obj.parent.remove(obj); }
+
+                if (textureTooLarge) {
+                    return { valid: false, reason: 'Texture resolution too high (max 2048x2048). Found: ' + textureTooLarge };
+                }
+                if (totalVertices > 200000) {
+                    return { valid: false, reason: 'Too many vertices (max 200K). Found: ' + totalVertices.toLocaleString() };
+                }
+                if (textures.size > 10) {
+                    return { valid: false, reason: 'Too many textures (max 10). Found: ' + textures.size };
+                }
+                if (!hasGroundPlane) {
+                    return { valid: false, reason: 'No ground plane detected. Scene needs a flat surface at least 20x20 units.' };
+                }
+
+                if (this._dbg()) console.log('[BIOME] valid: ' + totalVertices + ' verts, ' + textures.size + ' textures, ground plane found');
+                return { valid: true, vertices: totalVertices, textures: textures.size };
+            }
 
             async setupPoints() {
                 this.debug = false;
