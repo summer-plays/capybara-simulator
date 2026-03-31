@@ -38,6 +38,7 @@
             #music-controls button { width: 30px; height: 30px; }
             #music-controls button svg { width: 14px; height: 14px; }
             #btn-biome { top: 70px; right: 10px; font-size: 10px; padding: 4px 10px; }
+            #biome-slider-wrap { top: 95px; right: 10px; width: 120px; }
         }
         #persistent-hud {
             position: fixed;
@@ -143,6 +144,32 @@
         }
         #biome-toast.error { border-color: rgba(255,80,80,0.4); color: #ff8888; }
         #biome-toast.success { border-color: rgba(80,255,120,0.4); color: #88ff88; }
+        #biome-slider-wrap {
+            position: fixed;
+            top: 100px;
+            right: 16px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.6);
+            border-radius: 12px;
+            padding: 8px 12px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 140px;
+        }
+        #biome-slider-wrap label {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 11px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+        }
+        #biome-height {
+            width: 100%;
+            accent-color: #88ffaa;
+            cursor: pointer;
+        }
 
         /* ── ACTION BUTTONS (bottom bar) ── */
         #action-buttons {
@@ -1729,6 +1756,10 @@
     <button id="btn-biome" style="display:none;" title="Upload Biome">Upload Biome</button>
     <input type="file" id="biome-file-input" accept=".glb" style="display:none;">
     <div id="biome-toast"></div>
+    <div id="biome-slider-wrap" style="display:none;">
+        <label for="biome-height">Ground: <span id="biome-height-val">0.0</span></label>
+        <input type="range" id="biome-height" min="-5" max="10" step="0.1" value="0">
+    </div>
     <div id="hud" style="display:none;">
         </div>
     </div>
@@ -10714,6 +10745,15 @@
             setupBiomeSwap() {
                 this._uploadedBiome = null;
                 this._showingUploadedBiome = false;
+                this._biomeHeightOffset = 0;
+
+                const slider = document.getElementById('biome-height');
+                const sliderVal = document.getElementById('biome-height-val');
+                slider.addEventListener('input', () => {
+                    this._biomeHeightOffset = parseFloat(slider.value);
+                    sliderVal.textContent = this._biomeHeightOffset.toFixed(1);
+                    this._applyHeightOffset();
+                });
 
                 const btn = document.getElementById('btn-biome');
                 const fileInput = document.getElementById('biome-file-input');
@@ -10796,6 +10836,11 @@
                 const btn = document.getElementById('btn-biome');
                 btn.textContent = 'Swap Biome';
                 btn.classList.add('loaded');
+                document.getElementById('biome-slider-wrap').style.display = '';
+                const slider = document.getElementById('biome-height');
+                slider.value = this.capybara ? this.capybara.position.y : 0;
+                document.getElementById('biome-height-val').textContent = parseFloat(slider.value).toFixed(1);
+                this._biomeHeightOffset = parseFloat(slider.value);
 
                 this._showBiomeToast('Biome loaded!', 'success');
                 if (this._dbg()) console.log('[BIOME] applied uploaded biome');
@@ -10828,6 +10873,9 @@
                 const btn = document.getElementById('btn-biome');
                 btn.textContent = 'Upload Biome';
                 btn.classList.remove('loaded');
+                document.getElementById('biome-slider-wrap').style.display = 'none';
+                document.getElementById('biome-height').value = 0;
+                this._biomeHeightOffset = 0;
 
                 this._showBiomeToast('Biome removed', '');
                 if (this._dbg()) console.log('[BIOME] removed uploaded biome');
@@ -10883,6 +10931,25 @@
                     const finalSize = finalBox.getSize(new THREE.Vector3());
                     console.log('[BIOME] auto-fit: ' + finalSize.x.toFixed(1) + 'x' + finalSize.y.toFixed(1) + 'x' + finalSize.z.toFixed(1));
                 }
+            }
+
+            _applyHeightOffset() {
+                if (!this.capybara) return;
+                if (this._showingUploadedBiome) {
+                    const raycaster = new THREE.Raycaster();
+                    const origin = this.capybara.position.clone();
+                    origin.y = 50;
+                    raycaster.set(origin, new THREE.Vector3(0, -1, 0));
+                    const target = this._uploadedBiome || this._biomeGroup;
+                    const meshes = [];
+                    target.traverse(c => { if (c.isMesh) meshes.push(c); });
+                    const hits = raycaster.intersectObjects(meshes, false);
+                    const groundY = hits.length > 0 ? hits[0].point.y : 0;
+                    this.capybara.position.y = groundY + this._biomeHeightOffset;
+                } else {
+                    this._settleCapybaraOnGround();
+                }
+                if (this._dbg()) console.log('[BIOME] height offset: ' + this._biomeHeightOffset);
             }
 
             async setupPoints() {
