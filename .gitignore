@@ -11,6 +11,8 @@ screenshot.js
 .DS_Store
 models/*.zip
 *.png
+!Icons/**/*.png
+!Icons/*.png
 docs/
 *.pem
 *.key

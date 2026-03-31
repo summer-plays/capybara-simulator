@@ -1,2 +1,4 @@
 *.png
+!Icons/**/*.png
+!Icons/*.png
 *.md
