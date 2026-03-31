@@ -37,6 +37,7 @@
             #music-controls { gap: 5px; }
             #music-controls button { width: 30px; height: 30px; }
             #music-controls button svg { width: 14px; height: 14px; }
+            #btn-biome { top: 70px; right: 10px; font-size: 10px; padding: 4px 10px; }
         }
         #persistent-hud {
             position: fixed;
@@ -98,6 +99,29 @@
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
         }
         #btn-rain.active { background: rgba(255,255,255,0.3); color: rgba(255,255,255,0.95); }
+
+        #btn-biome {
+            position: fixed;
+            top: 75px;
+            right: 16px;
+            left: auto;
+            z-index: 1000;
+            pointer-events: all;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.85);
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 5px 12px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.2s;
+        }
+        #btn-biome:hover { background: rgba(255,255,255,0.2); }
+        #btn-biome:active { transform: scale(0.95); }
+        #btn-biome.loaded { background: rgba(100, 200, 140, 0.3); border-color: rgba(100, 220, 160, 0.4); }
 
         /* ── ACTION BUTTONS (bottom bar) ── */
         #action-buttons {
@@ -1681,6 +1705,8 @@
             <button id="btn-rain" title="Toggle rain"><svg viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><line x1="8" y1="16" x2="8" y2="20"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="16" y1="16" x2="16" y2="20"/></svg></button>
         </div>
     </div>
+    <button id="btn-biome" style="display:none;" title="Upload Biome">Upload Biome</button>
+    <input type="file" id="biome-file-input" accept=".glb" style="display:none;">
     <div id="hud" style="display:none;">
         </div>
     </div>
@@ -10359,6 +10385,7 @@
                 setTimeout(() => { loadingEl.style.display = 'none'; }, 700);
                 document.getElementById('hud').style.display = 'flex';
                 document.getElementById('persistent-hud').style.display = 'flex';
+                document.getElementById('btn-biome').style.display = '';
                 this.setupPoints();
                 this.setupWeather();
                 this.setupActionButtons();
