@@ -5740,13 +5740,14 @@
            FREE ROAM MODE — Social open-world with Aura system
            ═══════════════════════════════════════════════════════════ */
         class FreeRoamGame {
-            constructor(renderer, simScene, simModels, onExit, onVibes, onVibesBatch) {
+            constructor(renderer, simScene, simModels, onExit, onVibes, onVibesBatch, getBiomeMeshes) {
                 this._renderer = renderer;
                 this._simScene = simScene;
                 this._simModels = simModels;
                 this._onExit = onExit;
                 this._onVibes = onVibes || (() => {});
                 this._onVibesBatch = onVibesBatch || (() => {});
+                this._getBiomeMeshes = getBiomeMeshes || (() => []);
                 this._poiAuraAccum = 0;
                 this._lastNpcVibeTime = 0;
                 this._auraMilestonesHit = new Set();
@@ -5894,6 +5895,15 @@
                 this._setupInput();
                 this._loadAssets();
                 this._showLoading();
+            }
+
+            _getGroundY(x, z) {
+                const meshes = this._getBiomeMeshes();
+                if (meshes.length === 0) return 0;
+                const raycaster = new THREE.Raycaster();
+                raycaster.set(new THREE.Vector3(x, 50, z), new THREE.Vector3(0, -1, 0));
+                const hits = raycaster.intersectObjects(meshes, false);
+                return hits.length > 0 ? hits[0].point.y : 0;
             }
 
             // ── LOADING ──
@@ -9234,6 +9244,7 @@
 
                         this._playerPos.x = Math.max(-45, Math.min(45, this._playerPos.x));
                         this._playerPos.z = Math.max(-45, Math.min(45, this._playerPos.z));
+                        this._playerPos.y = this._getGroundY(this._playerPos.x, this._playerPos.z);
 
                         const targetRot = Math.atan2(moveDir.x, moveDir.z);
                         let diff = targetRot - this._playerRot;
@@ -9249,7 +9260,7 @@
                         // Walk bob
                         this._walkBob += delta * this._walkBobSpeed * joyMag;
                         const bobY = Math.sin(this._walkBob) * 0.04;
-                        this._playerGroup.position.y = bobY;
+                        this._playerGroup.position.y = this._playerPos.y + bobY;
 
                         // Footstep audio
                         this._footstepTimer -= delta;
@@ -9259,7 +9270,7 @@
                         }
                     } else {
                         if (this._playerWalkAction) this._playerWalkAction.paused = true;
-                        this._playerGroup.position.y *= 0.9; // settle back
+                        this._playerGroup.position.y = this._playerPos.y + (this._playerGroup.position.y - this._playerPos.y) * 0.9; // settle back
                         this._footstepTimer = 0;
                     }
 
@@ -10770,6 +10781,7 @@
                 this.scene.add(this._uploadedBiome);
                 this._biomeGroup.visible = false;
                 this._showingUploadedBiome = true;
+                this._settleCapybaraOnGround();
 
                 const btn = document.getElementById('btn-biome');
                 btn.textContent = 'Swap Biome';
@@ -10784,6 +10796,7 @@
                 this._showingUploadedBiome = !this._showingUploadedBiome;
                 this._uploadedBiome.visible = this._showingUploadedBiome;
                 this._biomeGroup.visible = !this._showingUploadedBiome;
+                this._settleCapybaraOnGround();
                 if (this._dbg()) console.log('[BIOME] toggled to ' + (this._showingUploadedBiome ? 'uploaded' : 'default'));
             }
 
@@ -10800,6 +10813,7 @@
                 this._uploadedBiome = null;
                 this._showingUploadedBiome = false;
                 this._biomeGroup.visible = true;
+                this._settleCapybaraOnGround();
 
                 const btn = document.getElementById('btn-biome');
                 btn.textContent = 'Upload Biome';
@@ -10807,6 +10821,27 @@
 
                 this._showBiomeToast('Biome removed', '');
                 if (this._dbg()) console.log('[BIOME] removed uploaded biome');
+            }
+
+            _settleCapybaraOnGround() {
+                if (!this.capybara) return;
+                const raycaster = new THREE.Raycaster();
+                const origin = this.capybara.position.clone();
+                origin.y = 50;
+                raycaster.set(origin, new THREE.Vector3(0, -1, 0));
+
+                const target = this._showingUploadedBiome && this._uploadedBiome ? this._uploadedBiome : this._biomeGroup;
+                const meshes = [];
+                target.traverse(c => { if (c.isMesh) meshes.push(c); });
+                const hits = raycaster.intersectObjects(meshes, false);
+
+                if (hits.length > 0) {
+                    this.capybara.position.y = hits[0].point.y;
+                    if (this._dbg()) console.log('[BIOME] capybara settled at y=' + hits[0].point.y.toFixed(2));
+                } else {
+                    this.capybara.position.y = 0;
+                    if (this._dbg()) console.log('[BIOME] no ground hit, capybara at y=0');
+                }
             }
 
             async setupPoints() {
@@ -12131,7 +12166,13 @@
                     this.models,
                     () => this._stopFreeRoam(),
                     (v, s) => this.awardVibes(v, s),
-                    (v, s) => this.awardVibesBatch(v, s)
+                    (v, s) => this.awardVibesBatch(v, s),
+                    () => {
+                        const target = this._showingUploadedBiome && this._uploadedBiome ? this._uploadedBiome : this._biomeGroup;
+                        const meshes = [];
+                        target.traverse(c => { if (c.isMesh) meshes.push(c); });
+                        return meshes;
+                    }
                 );
             }
 
