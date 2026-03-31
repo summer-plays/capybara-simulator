@@ -10409,6 +10409,7 @@
                 document.getElementById('persistent-hud').style.display = 'flex';
                 document.getElementById('btn-biome').style.display = '';
                 this.setupPoints();
+                this.setupBiomeSwap();
                 this.setupWeather();
                 this.setupActionButtons();
                 this.setupMarketCap();
@@ -10689,6 +10690,123 @@
 
                 if (this._dbg()) console.log('[BIOME] valid: ' + totalVertices + ' verts, ' + textures.size + ' textures, ground plane found');
                 return { valid: true, vertices: totalVertices, textures: textures.size };
+            }
+
+            setupBiomeSwap() {
+                this._uploadedBiome = null;
+                this._showingUploadedBiome = false;
+
+                const btn = document.getElementById('btn-biome');
+                const fileInput = document.getElementById('biome-file-input');
+
+                btn.addEventListener('click', () => {
+                    if (!this._uploadedBiome) {
+                        fileInput.click();
+                    } else {
+                        this._toggleBiome();
+                    }
+                });
+
+                btn.addEventListener('dblclick', () => {
+                    if (this._uploadedBiome) {
+                        this._removeBiome();
+                    }
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    fileInput.value = '';
+
+                    if (!file.name.toLowerCase().endsWith('.glb')) {
+                        this._showBiomeToast('Only .glb files accepted', 'error');
+                        return;
+                    }
+                    if (file.size > 20 * 1024 * 1024) {
+                        this._showBiomeToast('File too large (max 20MB). Size: ' + (file.size / 1024 / 1024).toFixed(1) + 'MB', 'error');
+                        return;
+                    }
+
+                    this._showBiomeToast('Loading biome...', '');
+
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        const loader = new GLTFLoader();
+                        loader.parse(evt.target.result, '', (gltf) => {
+                            const result = this._validateBiomeGLB(gltf);
+                            if (!result.valid) {
+                                this._showBiomeToast(result.reason, 'error');
+                                return;
+                            }
+                            this._applyBiome(gltf.scene);
+                        }, (err) => {
+                            this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
+                        });
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            _applyBiome(biomeScene) {
+                if (this._uploadedBiome) {
+                    this.scene.remove(this._uploadedBiome);
+                    this._uploadedBiome.traverse(c => {
+                        if (c.geometry) c.geometry.dispose();
+                        if (c.material) {
+                            const mats = Array.isArray(c.material) ? c.material : [c.material];
+                            mats.forEach(m => m.dispose());
+                        }
+                    });
+                }
+
+                biomeScene.traverse(c => {
+                    if (c.isMesh) {
+                        c.castShadow = true;
+                        c.receiveShadow = true;
+                    }
+                });
+
+                this._uploadedBiome = biomeScene;
+                this.scene.add(this._uploadedBiome);
+                this._biomeGroup.visible = false;
+                this._showingUploadedBiome = true;
+
+                const btn = document.getElementById('btn-biome');
+                btn.textContent = 'Swap Biome';
+                btn.classList.add('loaded');
+
+                this._showBiomeToast('Biome loaded!', 'success');
+                if (this._dbg()) console.log('[BIOME] applied uploaded biome');
+            }
+
+            _toggleBiome() {
+                if (!this._uploadedBiome) return;
+                this._showingUploadedBiome = !this._showingUploadedBiome;
+                this._uploadedBiome.visible = this._showingUploadedBiome;
+                this._biomeGroup.visible = !this._showingUploadedBiome;
+                if (this._dbg()) console.log('[BIOME] toggled to ' + (this._showingUploadedBiome ? 'uploaded' : 'default'));
+            }
+
+            _removeBiome() {
+                if (!this._uploadedBiome) return;
+                this.scene.remove(this._uploadedBiome);
+                this._uploadedBiome.traverse(c => {
+                    if (c.geometry) c.geometry.dispose();
+                    if (c.material) {
+                        const mats = Array.isArray(c.material) ? c.material : [c.material];
+                        mats.forEach(m => m.dispose());
+                    }
+                });
+                this._uploadedBiome = null;
+                this._showingUploadedBiome = false;
+                this._biomeGroup.visible = true;
+
+                const btn = document.getElementById('btn-biome');
+                btn.textContent = 'Upload Biome';
+                btn.classList.remove('loaded');
+
+                this._showBiomeToast('Biome removed', '');
+                if (this._dbg()) console.log('[BIOME] removed uploaded biome');
             }
 
             async setupPoints() {
