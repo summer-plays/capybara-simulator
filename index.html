@@ -1957,7 +1957,7 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-        import { SplatMesh } from '@sparkjsdev/spark';
+        // SplatMesh loaded dynamically in _loadSPZ to avoid breaking module if Spark/Three.js version mismatch
 
         // Model actual sizes from inspection:
         // palm-trees: 25.91x5.28x5.24 (cluster of palms, huge)
@@ -10815,11 +10815,14 @@
                         return;
                     }
 
+                    console.log('[BIOME] format: isGLB=' + isGLB + ' isSPZ=' + isSPZ + ' size=' + file.size);
                     this._showBiomeToast('Loading biome...', '');
 
                     const reader = new FileReader();
                     reader.onload = (evt) => {
+                        console.log('[BIOME] FileReader loaded, bytes=' + evt.target.result.byteLength);
                         if (isSPZ) {
+                            console.log('[BIOME] calling _loadSPZ...');
                             this._loadSPZ(evt.target.result);
                         } else {
                             const loader = new GLTFLoader();
@@ -11070,6 +11073,7 @@
 
             async _loadSPZ(arrayBuffer) {
                 try {
+                    const { SplatMesh } = await import('@sparkjsdev/spark');
                     const splatMesh = new SplatMesh();
                     await splatMesh.loadFromFileBytes(new Uint8Array(arrayBuffer), 'spz');
                     const group = new THREE.Group();
@@ -11077,6 +11081,7 @@
                     this._splatMesh = splatMesh;
                     this._applyBiomeSPZ(group);
                 } catch (err) {
+                    console.error('[BIOME] SPZ load error:', err);
                     this._showBiomeToast('Failed to load SPZ: ' + (err.message || err), 'error');
                 }
             }
