@@ -170,6 +170,25 @@
             accent-color: #88ffaa;
             cursor: pointer;
         }
+        #btn-collider {
+            position: fixed;
+            top: 155px;
+            right: 16px;
+            z-index: 1000;
+            pointer-events: all;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 4px 10px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+        }
+        #btn-collider:hover { background: rgba(255,255,255,0.15); }
+        #btn-collider.loaded { color: #88ff88; border-color: rgba(80,255,120,0.3); }
 
         /* ── ACTION BUTTONS (bottom bar) ── */
         #action-buttons {
@@ -1739,7 +1758,8 @@
     {
         "imports": {
             "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+            "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/0.1.10/spark.module.js"
         }
     }
     </script>
@@ -1754,12 +1774,14 @@
         </div>
     </div>
     <button id="btn-biome" style="display:none;" title="Upload Biome">Upload Biome</button>
-    <input type="file" id="biome-file-input" accept=".glb" style="display:none;">
+    <input type="file" id="biome-file-input" accept=".glb,.spz" style="display:none;">
+    <input type="file" id="biome-collider-input" accept=".glb" style="display:none;">
     <div id="biome-toast"></div>
     <div id="biome-slider-wrap" style="display:none;">
         <label for="biome-height">Ground: <span id="biome-height-val">0.0</span></label>
         <input type="range" id="biome-height" min="-5" max="10" step="0.1" value="0">
     </div>
+    <button id="btn-collider" style="display:none;" title="Upload collider GLB for ground collision">Upload Collider</button>
     <div id="hud" style="display:none;">
         </div>
     </div>
@@ -1935,6 +1957,7 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+        import { SplatMesh } from '@sparkjsdev/spark';
 
         // Model actual sizes from inspection:
         // palm-trees: 25.91x5.28x5.24 (cluster of palms, huge)
@@ -10776,13 +10799,18 @@
                     const file = e.target.files[0];
                     if (!file) return;
                     fileInput.value = '';
+                    const name = file.name.toLowerCase();
+                    const isGLB = name.endsWith('.glb');
+                    const isSPZ = name.endsWith('.spz');
 
-                    if (!file.name.toLowerCase().endsWith('.glb')) {
-                        this._showBiomeToast('Only .glb files accepted', 'error');
+                    if (!isGLB && !isSPZ) {
+                        this._showBiomeToast('Only .glb and .spz files supported', 'error');
                         return;
                     }
-                    if (file.size > 20 * 1024 * 1024) {
-                        this._showBiomeToast('File too large (max 20MB). Size: ' + (file.size / 1024 / 1024).toFixed(1) + 'MB', 'error');
+
+                    const maxSize = isSPZ ? 200 * 1024 * 1024 : 20 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        this._showBiomeToast('File too large (max ' + (isSPZ ? '200' : '20') + 'MB)', 'error');
                         return;
                     }
 
@@ -10790,16 +10818,75 @@
 
                     const reader = new FileReader();
                     reader.onload = (evt) => {
+                        if (isSPZ) {
+                            this._loadSPZ(evt.target.result);
+                        } else {
+                            const loader = new GLTFLoader();
+                            loader.parse(evt.target.result, '', (gltf) => {
+                                const result = this._validateBiomeGLB(gltf);
+                                if (!result.valid) {
+                                    if (result.reason.includes('ground plane')) {
+                                        this._showBiomeToast('No ground plane detected. Use the height slider to adjust.', 'error');
+                                    } else {
+                                        this._showBiomeToast(result.reason, 'error');
+                                        return;
+                                    }
+                                }
+                                this._uploadedBiomeType = 'glb';
+                                this._applyBiome(gltf.scene);
+                            }, (err) => {
+                                this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
+                            });
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+
+                const colliderBtn = document.getElementById('btn-collider');
+                const colliderInput = document.getElementById('biome-collider-input');
+
+                colliderBtn.addEventListener('click', () => {
+                    colliderInput.click();
+                });
+
+                colliderInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    colliderInput.value = '';
+
+                    if (!file.name.toLowerCase().endsWith('.glb')) {
+                        this._showBiomeToast('Collider must be a .glb file', 'error');
+                        return;
+                    }
+                    if (file.size > 20 * 1024 * 1024) {
+                        this._showBiomeToast('Collider too large (max 20MB)', 'error');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
                         const loader = new GLTFLoader();
                         loader.parse(evt.target.result, '', (gltf) => {
-                            const result = this._validateBiomeGLB(gltf);
-                            if (!result.valid) {
-                                this._showBiomeToast(result.reason, 'error');
-                                return;
-                            }
-                            this._applyBiome(gltf.scene);
+                            gltf.scene.traverse(c => {
+                                if (c.isMesh) c.visible = false;
+                            });
+                            this._autoFitBiome(gltf.scene);
+                            this._biomeCollider = gltf.scene;
+                            this.scene.add(this._biomeCollider);
+
+                            colliderBtn.textContent = 'Collider ✓';
+                            colliderBtn.classList.add('loaded');
+
+                            this._settleCapybaraOnGround();
+                            const slider = document.getElementById('biome-height');
+                            slider.value = this.capybara ? this.capybara.position.y : 0;
+                            document.getElementById('biome-height-val').textContent = parseFloat(slider.value).toFixed(1);
+                            this._biomeHeightOffset = parseFloat(slider.value);
+
+                            this._showBiomeToast('Collider loaded! Ground collision active.', 'success');
+                            if (this._dbg()) console.log('[BIOME] collider loaded');
                         }, (err) => {
-                            this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
+                            this._showBiomeToast('Failed to parse collider: ' + (err.message || err), 'error');
                         });
                     };
                     reader.readAsArrayBuffer(file);
@@ -10851,6 +10938,7 @@
                 this._showingUploadedBiome = !this._showingUploadedBiome;
                 this._uploadedBiome.visible = this._showingUploadedBiome;
                 this._biomeGroup.visible = !this._showingUploadedBiome;
+                if (this._biomeCollider) this._biomeCollider.visible = this._showingUploadedBiome;
                 this._settleCapybaraOnGround();
                 if (this._dbg()) console.log('[BIOME] toggled to ' + (this._showingUploadedBiome ? 'uploaded' : 'default'));
             }
@@ -10858,6 +10946,7 @@
             _removeBiome() {
                 if (!this._uploadedBiome) return;
                 this.scene.remove(this._uploadedBiome);
+                if (this._splatMesh) { this._splatMesh.dispose(); this._splatMesh = null; }
                 this._uploadedBiome.traverse(c => {
                     if (c.geometry) c.geometry.dispose();
                     if (c.material) {
@@ -10865,7 +10954,19 @@
                         mats.forEach(m => m.dispose());
                     }
                 });
+                if (this._biomeCollider) {
+                    this.scene.remove(this._biomeCollider);
+                    this._biomeCollider.traverse(c => {
+                        if (c.geometry) c.geometry.dispose();
+                        if (c.material) {
+                            const mats = Array.isArray(c.material) ? c.material : [c.material];
+                            mats.forEach(m => m.dispose());
+                        }
+                    });
+                    this._biomeCollider = null;
+                }
                 this._uploadedBiome = null;
+                this._uploadedBiomeType = null;
                 this._showingUploadedBiome = false;
                 this._biomeGroup.visible = true;
                 this._settleCapybaraOnGround();
@@ -10873,9 +10974,15 @@
                 const btn = document.getElementById('btn-biome');
                 btn.textContent = 'Upload Biome';
                 btn.classList.remove('loaded');
+
                 document.getElementById('biome-slider-wrap').style.display = 'none';
                 document.getElementById('biome-height').value = 0;
                 this._biomeHeightOffset = 0;
+
+                const colliderBtn = document.getElementById('btn-collider');
+                colliderBtn.style.display = 'none';
+                colliderBtn.textContent = 'Upload Collider';
+                colliderBtn.classList.remove('loaded');
 
                 this._showBiomeToast('Biome removed', '');
                 if (this._dbg()) console.log('[BIOME] removed uploaded biome');
@@ -10888,17 +10995,25 @@
                 origin.y = 50;
                 raycaster.set(origin, new THREE.Vector3(0, -1, 0));
 
-                const target = this._showingUploadedBiome && this._uploadedBiome ? this._uploadedBiome : this._biomeGroup;
+                let target;
+                if (this._biomeCollider) {
+                    target = this._biomeCollider;
+                } else if (this._showingUploadedBiome && this._uploadedBiome && this._uploadedBiomeType === 'glb') {
+                    target = this._uploadedBiome;
+                } else {
+                    target = this._biomeGroup;
+                }
+
                 const meshes = [];
                 target.traverse(c => { if (c.isMesh) meshes.push(c); });
                 const hits = raycaster.intersectObjects(meshes, false);
 
                 if (hits.length > 0) {
-                    this.capybara.position.y = hits[0].point.y;
-                    if (this._dbg()) console.log('[BIOME] capybara settled at y=' + hits[0].point.y.toFixed(2));
+                    this.capybara.position.y = hits[0].point.y + (this._biomeHeightOffset || 0);
+                    if (this._dbg()) console.log('[BIOME] capybara settled at y=' + this.capybara.position.y.toFixed(2));
                 } else {
-                    this.capybara.position.y = 0;
-                    if (this._dbg()) console.log('[BIOME] no ground hit, capybara at y=0');
+                    this.capybara.position.y = this._biomeHeightOffset || 0;
+                    if (this._dbg()) console.log('[BIOME] no ground hit, capybara at y=' + this.capybara.position.y.toFixed(2));
                 }
             }
 
@@ -10950,6 +11065,48 @@
                     this._settleCapybaraOnGround();
                 }
                 if (this._dbg()) console.log('[BIOME] height offset: ' + this._biomeHeightOffset);
+            }
+
+            async _loadSPZ(arrayBuffer) {
+                try {
+                    const splatMesh = new SplatMesh();
+                    await splatMesh.loadFromFileBytes(new Uint8Array(arrayBuffer), 'spz');
+                    const group = new THREE.Group();
+                    group.add(splatMesh);
+                    this._splatMesh = splatMesh;
+                    this._applyBiomeSPZ(group);
+                } catch (err) {
+                    this._showBiomeToast('Failed to load SPZ: ' + (err.message || err), 'error');
+                }
+            }
+
+            _applyBiomeSPZ(splatGroup) {
+                if (this._uploadedBiome) {
+                    this.scene.remove(this._uploadedBiome);
+                    if (this._splatMesh) { this._splatMesh.dispose(); this._splatMesh = null; }
+                }
+
+                this._uploadedBiome = splatGroup;
+                this._uploadedBiomeType = 'spz';
+                this.scene.add(this._uploadedBiome);
+                this._biomeGroup.visible = false;
+                this._showingUploadedBiome = true;
+
+                if (this.capybara) this.capybara.position.y = 0;
+
+                const btn = document.getElementById('btn-biome');
+                btn.textContent = 'Swap Biome';
+                btn.classList.add('loaded');
+
+                document.getElementById('biome-slider-wrap').style.display = '';
+                document.getElementById('btn-collider').style.display = '';
+                const slider = document.getElementById('biome-height');
+                slider.value = 0;
+                document.getElementById('biome-height-val').textContent = '0.0';
+                this._biomeHeightOffset = 0;
+
+                this._showBiomeToast('Biome loaded! Upload a collider GLB for ground collision, or use the height slider.', 'success');
+                if (this._dbg()) console.log('[BIOME] applied SPZ biome');
             }
 
             async setupPoints() {
@@ -12276,7 +12433,14 @@
                     (v, s) => this.awardVibes(v, s),
                     (v, s) => this.awardVibesBatch(v, s),
                     () => {
-                        const target = this._showingUploadedBiome && this._uploadedBiome ? this._uploadedBiome : this._biomeGroup;
+                        let target;
+                        if (this._biomeCollider) {
+                            target = this._biomeCollider;
+                        } else if (this._showingUploadedBiome && this._uploadedBiome && this._uploadedBiomeType === 'glb') {
+                            target = this._uploadedBiome;
+                        } else {
+                            target = this._biomeGroup;
+                        }
                         const meshes = [];
                         target.traverse(c => { if (c.isMesh) meshes.push(c); });
                         return meshes;
