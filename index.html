@@ -1774,7 +1774,7 @@
         </div>
     </div>
     <button id="btn-biome" style="display:none;" title="Upload Biome">Upload Biome</button>
-    <input type="file" id="biome-file-input" accept=".glb,.spz" style="display:none;">
+    <input type="file" id="biome-file-input" accept=".glb,.spz,*/*" style="display:none;">
     <input type="file" id="biome-collider-input" accept=".glb" style="display:none;">
     <div id="biome-toast"></div>
     <div id="biome-slider-wrap" style="display:none;">
@@ -10797,6 +10797,7 @@
 
                 fileInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
+                    console.log('[BIOME] file selected:', file ? file.name + ' (' + (file.size/1024/1024).toFixed(1) + 'MB)' : 'none');
                     if (!file) return;
                     fileInput.value = '';
                     const name = file.name.toLowerCase();
