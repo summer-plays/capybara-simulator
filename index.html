@@ -6596,6 +6596,7 @@
             }
 
             _placeEnvironment() {
+                this._frEnvObjects = [];
                 const place = (name, x, z, s, ry) => {
                     const src = this._envGLTFs[name];
                     if (!src) return;
@@ -6605,6 +6606,7 @@
                     clone.rotation.y = ry || 0;
                     clone.traverse(c => { if(c.isMesh) { c.castShadow=true; c.receiveShadow=true; } });
                     this._scene.add(clone);
+                    this._frEnvObjects.push(clone);
                 };
 
                 // Trees scattered around the larger world
@@ -6647,7 +6649,13 @@
                         w.rotation.y = Math.random()*Math.PI*2;
                         w.traverse(c => { if(c.isMesh) { c.castShadow=true; c.receiveShadow=true; }});
                         this._scene.add(w);
+                        this._frEnvObjects.push(w);
                     }
+                }
+
+                // Hide Free Roam environment when a custom biome is active
+                if (this._getBiomeMeshes && this._getBiomeMeshes().length > 0) {
+                    for (const obj of this._frEnvObjects) obj.visible = false;
                 }
             }
 
