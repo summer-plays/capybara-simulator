@@ -9912,7 +9912,7 @@
                 await this._loadStandingCapybara(loader);
             }
 
-            placeModel(name, x, y, z, scale = 1, rotY = 0) {
+            placeModel(name, x, y, z, scale = 1, rotY = 0, parent) {
                 const src = this.models[name];
                 if (!src) return null;
                 const clone = src.clone();
@@ -9925,7 +9925,7 @@
                         c.receiveShadow = true;
                     }
                 });
-                this.scene.add(clone);
+                (parent || this.scene).add(clone);
                 return clone;
             }
 
@@ -10052,6 +10052,10 @@
 
             buildScene() {
                 // === TERRAIN ===
+                this._biomeGroup = new THREE.Group();
+                this._biomeGroup.name = 'defaultBiome';
+                this.scene.add(this._biomeGroup);
+
                 const groundGeo = new THREE.PlaneGeometry(140, 120, 50, 40);
                 groundGeo.rotateX(-Math.PI / 2);
                 const pos = groundGeo.attributes.position;
@@ -10088,7 +10092,7 @@
                 groundGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
                 const ground = new THREE.Mesh(groundGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
                 ground.receiveShadow = true;
-                this.scene.add(ground);
+                this._biomeGroup.add(ground);
 
                 // === SKY DOME ===
                 const skyGeo = new THREE.SphereGeometry(200, 32, 16);
@@ -10135,11 +10139,11 @@
                 const sand = new THREE.Mesh(sandGeo, new THREE.MeshLambertMaterial({ color: 0xc4a86a }));
                 sand.position.set(0, 0.005, -13);
                 sand.receiveShadow = true;
-                this.scene.add(sand);
+                this._biomeGroup.add(sand);
 
                 // Water
                 water.position.set(0, 0.01, -13);
-                this.scene.add(water);
+                this._biomeGroup.add(water);
 
                 // === FLOWERS (flower.glb, instanced lavender, GPU wind) ===
                 if (this.models['flower']) {
@@ -10153,7 +10157,7 @@
                         [5, -5], [-7, 6], [3, -8], [12, -2], [-11, 0],
                     ];
                     for (const [x, z] of spots) {
-                        this.placeModel('grass-turf', x, 0.05, z, 0.5 + Math.random() * 0.3, Math.random() * Math.PI * 2);
+                        this.placeModel('grass-turf', x, 0.05, z, 0.5 + Math.random() * 0.3, Math.random() * Math.PI * 2, this._biomeGroup);
                     }
                 }
 
@@ -10204,7 +10208,7 @@
                         wrapper.scale.set(s, s, s);
                         wrapper.rotation.y = Math.random() * Math.PI * 2;
                         wrapper.traverse(c => { if(c.isMesh) { c.castShadow=true; c.receiveShadow=true; }});
-                        this.scene.add(wrapper);
+                        this._biomeGroup.add(wrapper);
                     }
                 }
 
@@ -10248,7 +10252,7 @@
                 ];
                 for (const t of leafy) {
                     const y = this.getTerrainY(t.x, t.z);
-                    this.placeModel(t.n, t.x, y, t.z, t.s, Math.random() * Math.PI * 2);
+                    this.placeModel(t.n, t.x, y, t.z, t.s, Math.random() * Math.PI * 2, this._biomeGroup);
                 }
 
                 // === ROCKS - around pond banks and slopes ===
@@ -10273,7 +10277,7 @@
                 ];
                 for (const r of rockPlacements) {
                     const y = this.getTerrainY(r.x, r.z);
-                    this.placeModel(r.n, r.x, y - 0.3, r.z, r.s, Math.random() * Math.PI * 2);
+                    this.placeModel(r.n, r.x, y - 0.3, r.z, r.s, Math.random() * Math.PI * 2, this._biomeGroup);
                 }
 
                 // === CAPYBARA (rigged with animations) ===
