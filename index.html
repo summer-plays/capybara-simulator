@@ -129,20 +129,21 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.92);
+            background: rgba(0,0,0,0.95);
             color: #fff;
-            padding: 16px 28px;
-            border-radius: 14px;
+            padding: 24px 36px;
+            border-radius: 16px;
             font-family: 'Quicksand', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            z-index: 2000;
+            font-size: 16px;
+            font-weight: 700;
+            z-index: 99999;
             display: none;
             text-align: center;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            max-width: 400px;
-            line-height: 1.5;
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255,255,255,0.2);
+            max-width: 450px;
+            line-height: 1.6;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
         #biome-toast.error { border-color: rgba(255,80,80,0.4); color: #ff8888; }
         #biome-toast.success { border-color: rgba(80,255,120,0.4); color: #88ff88; }
@@ -10861,7 +10862,7 @@
                         return;
                     }
                     if (file.size > 20 * 1024 * 1024) {
-                        this._showBiomeToast('File too large (max 20MB)', 'error');
+                        this._showBiomeToast('File too large (max 20MB). Your file: ' + (file.size / 1024 / 1024).toFixed(0) + 'MB', 'error');
                         return;
                     }
 
