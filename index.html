@@ -5976,6 +5976,7 @@
             _getGroundY(x, z) {
                 const meshes = this._getBiomeMeshes();
                 if (meshes.length === 0) return 0;
+                if (!meshes._hasCustomBiome) return 0;
                 const raycaster = new THREE.Raycaster();
                 raycaster.set(new THREE.Vector3(x, 50, z), new THREE.Vector3(0, -1, 0));
                 const hits = raycaster.intersectObjects(meshes, false);
@@ -12495,8 +12496,10 @@
                         } else {
                             target = this._biomeGroup;
                         }
+                        const hasCustom = this._showingUploadedBiome && (this._uploadedBiome || this._biomeCollider);
                         const meshes = [];
                         target.traverse(c => { if (c.isMesh) meshes.push(c); });
+                        meshes._hasCustomBiome = hasCustom;
                         return meshes;
                     }
                 );
