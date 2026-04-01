@@ -10871,9 +10871,11 @@
 
                     const reader = new FileReader();
                     reader.onload = (evt) => {
+                        alert('FileReader done, parsing GLB...');
                         const loader = new GLTFLoader();
                         loader.parse(evt.target.result, '', (gltf) => {
                             const result = this._validateBiomeGLB(gltf);
+                            alert('Validation: ' + (result.valid ? 'PASS' : result.reason));
                             if (!result.valid) {
                                 if (result.reason.includes('ground plane')) {
                                     this._showBiomeToast('No ground plane detected. Use the height slider to adjust.', 'error');
@@ -10885,6 +10887,7 @@
                             this._uploadedBiomeType = 'glb';
                             this._applyBiome(gltf.scene);
                         }, (err) => {
+                            alert('GLB PARSE ERROR: ' + (err.message || err));
                             this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
                         });
                     };
