@@ -10873,7 +10873,11 @@
                     reader.onload = (evt) => {
                         alert('FileReader done, parsing GLB...');
                         const loader = new GLTFLoader();
+                        const parseTimeout = setTimeout(() => {
+                            this._showBiomeToast('GLB parsing failed or timed out. The file may use unsupported features.', 'error');
+                        }, 10000);
                         loader.parse(evt.target.result, '', (gltf) => {
+                            clearTimeout(parseTimeout);
                             const result = this._validateBiomeGLB(gltf);
                             alert('Validation: ' + (result.valid ? 'PASS' : result.reason));
                             if (!result.valid) {
@@ -10887,6 +10891,7 @@
                             this._uploadedBiomeType = 'glb';
                             this._applyBiome(gltf.scene);
                         }, (err) => {
+                            clearTimeout(parseTimeout);
                             alert('GLB PARSE ERROR: ' + (err.message || err));
                             this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
                         });
