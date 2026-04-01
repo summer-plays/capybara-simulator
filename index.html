@@ -1767,8 +1767,8 @@
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+            "three": "https://unpkg.com/three@0.178.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.178.0/examples/jsm/",
             "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/0.1.10/spark.module.js"
         }
     }
@@ -1967,7 +1967,7 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-        // SplatMesh loaded dynamically in _loadSPZ to avoid breaking module if Spark/Three.js version mismatch
+        import { SplatMesh } from '@sparkjsdev/spark';
 
         // Model actual sizes from inspection:
         // palm-trees: 25.91x5.28x5.24 (cluster of palms, huge)
@@ -11096,20 +11096,16 @@
             }
 
             async _loadSPZ(arrayBuffer) {
-                this._showBiomeToast('Loading SPZ — importing Spark library...', '');
-                console.log('[BIOME] _loadSPZ called, bytes:', arrayBuffer.byteLength);
+                this._showBiomeToast('Parsing SPZ file...', '');
                 try {
-                    console.log('[BIOME] importing @sparkjsdev/spark...');
-                    const sparkModule = await import('@sparkjsdev/spark');
-                    console.log('[BIOME] Spark imported, keys:', Object.keys(sparkModule));
-                    const SplatMesh = sparkModule.SplatMesh;
-                    if (!SplatMesh) throw new Error('SplatMesh not found in Spark module');
-                    this._showBiomeToast('Parsing SPZ file...', '');
-                    console.log('[BIOME] creating SplatMesh with fileBytes...');
-                    const splatMesh = new SplatMesh({ fileBytes: new Uint8Array(arrayBuffer) });
-                    console.log('[BIOME] SplatMesh created, waiting for ready...');
-                    if (splatMesh.ready) await splatMesh.ready;
-                    console.log('[BIOME] SPZ parsed successfully');
+                    const splatMesh = new SplatMesh({
+                        fileBytes: new Uint8Array(arrayBuffer),
+                        maxStdDev: Math.sqrt(5),
+                        maxPixelRadius: 256,
+                        falloff: 0.5,
+                    });
+                    if (this._dbg()) console.log('[BIOME] SplatMesh created');
+
                     const group = new THREE.Group();
                     group.add(splatMesh);
                     this._splatMesh = splatMesh;
