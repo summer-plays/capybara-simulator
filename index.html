@@ -1794,7 +1794,7 @@
         </div>
     </div>
     <button id="btn-biome" style="display:none;" title="Upload Biome">Upload Biome</button>
-    <input type="file" id="biome-file-input" accept=".glb,.spz,*/*" style="display:none;">
+    <input type="file" id="biome-file-input" accept=".glb" style="display:none;">
     <input type="file" id="biome-collider-input" accept=".glb" style="display:none;">
     <div id="biome-toast"></div>
     <div id="biome-slider-wrap" style="display:none;">
@@ -10853,51 +10853,38 @@
 
                 fileInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
-                    console.log('[BIOME] file selected:', file ? file.name + ' (' + (file.size/1024/1024).toFixed(1) + 'MB)' : 'none');
                     if (!file) return;
                     fileInput.value = '';
-                    const name = file.name.toLowerCase();
-                    const isGLB = name.endsWith('.glb');
-                    const isSPZ = name.endsWith('.spz');
 
-                    if (!isGLB && !isSPZ) {
-                        this._showBiomeToast('Only .glb and .spz files supported', 'error');
+                    if (!file.name.toLowerCase().endsWith('.glb')) {
+                        this._showBiomeToast('Only .glb files supported', 'error');
+                        return;
+                    }
+                    if (file.size > 20 * 1024 * 1024) {
+                        this._showBiomeToast('File too large (max 20MB)', 'error');
                         return;
                     }
 
-                    const maxSize = isSPZ ? 200 * 1024 * 1024 : 20 * 1024 * 1024;
-                    if (file.size > maxSize) {
-                        this._showBiomeToast('File too large (max ' + (isSPZ ? '200' : '20') + 'MB)', 'error');
-                        return;
-                    }
-
-                    console.log('[BIOME] format: isGLB=' + isGLB + ' isSPZ=' + isSPZ + ' size=' + file.size);
                     this._showBiomeToast('Loading biome...', '');
 
                     const reader = new FileReader();
                     reader.onload = (evt) => {
-                        console.log('[BIOME] FileReader loaded, bytes=' + evt.target.result.byteLength);
-                        if (isSPZ) {
-                            console.log('[BIOME] calling _loadSPZ...');
-                            this._loadSPZ(evt.target.result);
-                        } else {
-                            const loader = new GLTFLoader();
-                            loader.parse(evt.target.result, '', (gltf) => {
-                                const result = this._validateBiomeGLB(gltf);
-                                if (!result.valid) {
-                                    if (result.reason.includes('ground plane')) {
-                                        this._showBiomeToast('No ground plane detected. Use the height slider to adjust.', 'error');
-                                    } else {
-                                        this._showBiomeToast(result.reason, 'error');
-                                        return;
-                                    }
+                        const loader = new GLTFLoader();
+                        loader.parse(evt.target.result, '', (gltf) => {
+                            const result = this._validateBiomeGLB(gltf);
+                            if (!result.valid) {
+                                if (result.reason.includes('ground plane')) {
+                                    this._showBiomeToast('No ground plane detected. Use the height slider to adjust.', 'error');
+                                } else {
+                                    this._showBiomeToast(result.reason, 'error');
+                                    return;
                                 }
-                                this._uploadedBiomeType = 'glb';
-                                this._applyBiome(gltf.scene);
-                            }, (err) => {
-                                this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
-                            });
-                        }
+                            }
+                            this._uploadedBiomeType = 'glb';
+                            this._applyBiome(gltf.scene);
+                        }, (err) => {
+                            this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
+                        });
                     };
                     reader.readAsArrayBuffer(file);
                 });
