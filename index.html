@@ -11044,24 +11044,8 @@
             }
 
             _settleCapybaraOnGround() {
-                if (!this.capybara) return;
-                const raycaster = new THREE.Raycaster();
-                const origin = this.capybara.position.clone();
-                origin.y = 50;
-                raycaster.set(origin, new THREE.Vector3(0, -1, 0));
-
-                let target;
-                if (this._biomeCollider) {
-                    target = this._biomeCollider;
-                } else if (this._showingUploadedBiome && this._uploadedBiome && this._uploadedBiomeType === 'glb') {
-                    target = this._uploadedBiome;
-                } else {
-                    target = this._biomeGroup;
-                }
-
-                const meshes = [];
-                target.traverse(c => { if (c.isMesh) meshes.push(c); });
-                const hits = raycaster.intersectObjects(meshes, false);
+                // Disabled — using sliders only for positioning
+                return;
 
                 if (hits.length > 0) {
                     this.capybara.position.y = hits[0].point.y + (this._biomeHeightOffset || 0);
