@@ -10730,7 +10730,7 @@
                 text.textContent = msg;
                 el.appendChild(text);
                 el.className = type || '';
-                el.style.display = '';
+                el.style.display = 'block';
                 clearTimeout(this._biomeToastTimer);
                 if (type === 'error') {
                     const dismiss = document.createElement('span');
@@ -10881,12 +10881,7 @@
                             clearTimeout(parseTimeout);
                             const result = this._validateBiomeGLB(gltf);
                             if (!result.valid) {
-                                if (result.reason.includes('ground plane')) {
-                                    this._showBiomeToast('No ground plane detected. Use the height slider to adjust.', 'error');
-                                } else {
-                                    this._showBiomeToast(result.reason, 'error');
-                                    return;
-                                }
+                                this._showBiomeToast('Warning: ' + result.reason + ' — loading anyway, may lag.', 'error');
                             }
                             this._uploadedBiomeType = 'glb';
                             this._applyBiome(gltf.scene);
