@@ -175,10 +175,21 @@
             color: rgba(255,255,255,0.7);
             font-weight: 600;
         }
-        #biome-height {
+        #biome-height, #biome-scale {
             width: 100%;
             accent-color: #88ffaa;
             cursor: pointer;
+        }
+        #biome-scale-num, #biome-height-num {
+            width: 50px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            color: #fff;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 11px;
+            padding: 2px 4px;
+            text-align: center;
         }
         #btn-collider {
             position: fixed;
@@ -1788,8 +1799,10 @@
     <input type="file" id="biome-collider-input" accept=".glb" style="display:none;">
     <div id="biome-toast"></div>
     <div id="biome-slider-wrap" style="display:none;">
-        <label for="biome-height">Ground: <span id="biome-height-val">0.0</span></label>
-        <input type="range" id="biome-height" min="-5" max="10" step="0.1" value="0">
+        <label>Scale: <input type="number" id="biome-scale-num" value="1" step="0.1" min="0.01"></label>
+        <input type="range" id="biome-scale" min="0.1" max="50" step="0.1" value="1">
+        <label>Ground: <input type="number" id="biome-height-num" value="0" step="0.1"></label>
+        <input type="range" id="biome-height" min="-20" max="20" step="0.1" value="0">
     </div>
     <button id="btn-collider" style="display:none;" title="Upload collider GLB for ground collision">Upload Collider</button>
     <div id="hud" style="display:none;">
@@ -10793,14 +10806,33 @@
                 this._uploadedBiome = null;
                 this._showingUploadedBiome = false;
                 this._biomeHeightOffset = 0;
+                this._biomeScale = 1;
 
                 const slider = document.getElementById('biome-height');
-                const sliderVal = document.getElementById('biome-height-val');
-                slider.addEventListener('input', () => {
-                    this._biomeHeightOffset = parseFloat(slider.value);
-                    sliderVal.textContent = this._biomeHeightOffset.toFixed(1);
+                const heightNum = document.getElementById('biome-height-num');
+                const syncHeight = (val) => {
+                    this._biomeHeightOffset = val;
+                    slider.value = val;
+                    heightNum.value = val;
                     this._applyHeightOffset();
-                });
+                };
+                slider.addEventListener('input', () => syncHeight(parseFloat(slider.value)));
+                heightNum.addEventListener('input', () => syncHeight(parseFloat(heightNum.value) || 0));
+
+                const scaleSlider = document.getElementById('biome-scale');
+                const scaleNum = document.getElementById('biome-scale-num');
+                const syncScale = (val) => {
+                    if (val <= 0) val = 0.01;
+                    this._biomeScale = val;
+                    scaleSlider.value = Math.min(val, 50);
+                    scaleNum.value = val;
+                    if (this._uploadedBiome) {
+                        this._uploadedBiome.scale.setScalar(val);
+                        this._applyHeightOffset();
+                    }
+                };
+                scaleSlider.addEventListener('input', () => syncScale(parseFloat(scaleSlider.value)));
+                scaleNum.addEventListener('input', () => syncScale(parseFloat(scaleNum.value) || 1));
 
                 const btn = document.getElementById('btn-biome');
                 const fileInput = document.getElementById('biome-file-input');
@@ -11005,7 +11037,11 @@
 
                 document.getElementById('biome-slider-wrap').style.display = 'none';
                 document.getElementById('biome-height').value = 0;
+                document.getElementById('biome-height-num').value = 0;
+                document.getElementById('biome-scale').value = 1;
+                document.getElementById('biome-scale-num').value = 1;
                 this._biomeHeightOffset = 0;
+                this._biomeScale = 1;
 
                 const colliderBtn = document.getElementById('btn-collider');
                 colliderBtn.style.display = 'none';
