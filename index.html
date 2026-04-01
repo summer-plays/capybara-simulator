@@ -176,12 +176,12 @@
             color: rgba(255,255,255,0.7);
             font-weight: 600;
         }
-        #biome-height, #biome-scale {
+        #biome-height, #biome-scale, #biome-x, #biome-z {
             width: 100%;
             accent-color: #88ffaa;
             cursor: pointer;
         }
-        #biome-scale-num, #biome-height-num {
+        #biome-scale-num, #biome-height-num, #biome-x-num, #biome-z-num {
             width: 50px;
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
@@ -1801,8 +1801,12 @@
     <div id="biome-slider-wrap" style="display:none;">
         <label>Scale: <input type="number" id="biome-scale-num" value="1" step="0.1" min="0.01"></label>
         <input type="range" id="biome-scale" min="0.1" max="50" step="0.1" value="1">
-        <label>Ground: <input type="number" id="biome-height-num" value="0" step="0.1"></label>
+        <label>Y: <input type="number" id="biome-height-num" value="0" step="0.1"></label>
         <input type="range" id="biome-height" min="-20" max="20" step="0.1" value="0">
+        <label>X: <input type="number" id="biome-x-num" value="0" step="0.1"></label>
+        <input type="range" id="biome-x" min="-20" max="20" step="0.1" value="0">
+        <label>Z: <input type="number" id="biome-z-num" value="0" step="0.1"></label>
+        <input type="range" id="biome-z" min="-20" max="20" step="0.1" value="0">
     </div>
     <button id="btn-collider" style="display:none;" title="Upload collider GLB for ground collision">Upload Collider</button>
     <div id="hud" style="display:none;">
@@ -10835,6 +10839,28 @@
                 scaleSlider.addEventListener('input', () => syncScale(parseFloat(scaleSlider.value)));
                 scaleNum.addEventListener('input', () => syncScale(parseFloat(scaleNum.value) || 1));
 
+                const xSlider = document.getElementById('biome-x');
+                const xNum = document.getElementById('biome-x-num');
+                const syncX = (val) => {
+                    xSlider.value = Math.min(Math.max(val, -20), 20);
+                    xNum.value = val;
+                    if (this._uploadedBiome) this._uploadedBiome.position.x = val;
+                    if (this._biomeCollider) this._biomeCollider.position.x = val;
+                };
+                xSlider.addEventListener('input', () => syncX(parseFloat(xSlider.value)));
+                xNum.addEventListener('input', () => syncX(parseFloat(xNum.value) || 0));
+
+                const zSlider = document.getElementById('biome-z');
+                const zNum = document.getElementById('biome-z-num');
+                const syncZ = (val) => {
+                    zSlider.value = Math.min(Math.max(val, -20), 20);
+                    zNum.value = val;
+                    if (this._uploadedBiome) this._uploadedBiome.position.z = val;
+                    if (this._biomeCollider) this._biomeCollider.position.z = val;
+                };
+                zSlider.addEventListener('input', () => syncZ(parseFloat(zSlider.value)));
+                zNum.addEventListener('input', () => syncZ(parseFloat(zNum.value) || 0));
+
                 const btn = document.getElementById('btn-biome');
                 const fileInput = document.getElementById('biome-file-input');
 
@@ -11031,6 +11057,10 @@
                 document.getElementById('biome-height-num').value = 0;
                 document.getElementById('biome-scale').value = 1;
                 document.getElementById('biome-scale-num').value = 1;
+                document.getElementById('biome-x').value = 0;
+                document.getElementById('biome-x-num').value = 0;
+                document.getElementById('biome-z').value = 0;
+                document.getElementById('biome-z-num').value = 0;
                 this._biomeHeightOffset = 0;
                 this._biomeScale = 1;
 
