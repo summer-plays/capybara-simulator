@@ -1778,9 +1778,8 @@
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.178.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.178.0/examples/jsm/",
-            "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/0.1.10/spark.module.js"
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
         }
     }
     </script>
@@ -1980,7 +1979,7 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-        import { SplatMesh } from '@sparkjsdev/spark';
+        // SplatMesh loaded dynamically — Spark requires Three.js r178+, incompatible with our r160
 
         // Model actual sizes from inspection:
         // palm-trees: 25.91x5.28x5.24 (cluster of palms, huge)
@@ -10519,12 +10518,12 @@
                 // fwd = meters forward (world +Z, capybara faces +Z)
                 // Order must match hatFiles in loadModels()
                 const hatConfigs = [
-                    { up: 0.25, fwd: 0.0 },  // baseball
-                    { up: 0.12, fwd: -0.06 },  // graduation
-                    { up: 0.32, fwd: 0.0 },  // hardhat
-                    { up: 0.08, fwd: 0.06 },  // pirate
-                    { up: 0.29, fwd: -0.08 },  // tophat
-                    { up: 0.33, fwd: -0.04 },  // wizard
+                    { up: 0.50, fwd: 0.0 },  // baseball
+                    { up: 0.32, fwd: -0.06 },  // graduation
+                    { up: 0.57, fwd: 0.0 },  // hardhat
+                    { up: 0.28, fwd: 0.06 },  // pirate
+                    { up: 0.54, fwd: -0.08 },  // tophat
+                    { up: 0.58, fwd: -0.04 },  // wizard
                 ];
 
                 const onTap = () => {
@@ -11132,24 +11131,7 @@
             }
 
             async _loadSPZ(arrayBuffer) {
-                this._showBiomeToast('Parsing SPZ file...', '');
-                try {
-                    const splatMesh = new SplatMesh({
-                        fileBytes: new Uint8Array(arrayBuffer),
-                        maxStdDev: Math.sqrt(5),
-                        maxPixelRadius: 256,
-                        falloff: 0.5,
-                    });
-                    if (this._dbg()) console.log('[BIOME] SplatMesh created');
-
-                    const group = new THREE.Group();
-                    group.add(splatMesh);
-                    this._splatMesh = splatMesh;
-                    this._applyBiomeSPZ(group);
-                } catch (err) {
-                    console.error('[BIOME] SPZ load error:', err);
-                    this._showBiomeToast('Failed to load SPZ: ' + (err.message || String(err)), 'error');
-                }
+                this._showBiomeToast('SPZ format not yet supported. Please convert to GLB using Blender or an online converter.', 'error');
             }
 
             _applyBiomeSPZ(splatGroup) {
@@ -12594,7 +12576,6 @@
 
                 // Hat follows head bone as a prop (offset rotates with bone)
                 if (this.currentHatMesh && this._capyHeadBone && this._currentHatCfg) {
-                    this._capyHeadBone.updateWorldMatrix(true, false);
                     this._capyHeadBone.getWorldPosition(this._hatFollowPos);
                     this._capyHeadBone.getWorldQuaternion(this._hatFollowQuat);
                     const cfg = this._currentHatCfg;
