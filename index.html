@@ -10887,8 +10887,8 @@
                         this._showBiomeToast('Only .glb files supported', 'error');
                         return;
                     }
-                    if (file.size > 200 * 1024 * 1024) {
-                        this._showBiomeToast('File too large (max 200MB). Your file: ' + (file.size / 1024 / 1024).toFixed(0) + 'MB', 'error');
+                    if (file.size > 20 * 1024 * 1024) {
+                        this._showBiomeToast('File too large (max 20MB). Your file: ' + (file.size / 1024 / 1024).toFixed(0) + 'MB', 'error');
                         return;
                     }
 
