@@ -11096,17 +11096,27 @@
             }
 
             async _loadSPZ(arrayBuffer) {
+                this._showBiomeToast('Loading SPZ — importing Spark library...', '');
+                console.log('[BIOME] _loadSPZ called, bytes:', arrayBuffer.byteLength);
                 try {
-                    const { SplatMesh } = await import('@sparkjsdev/spark');
+                    console.log('[BIOME] importing @sparkjsdev/spark...');
+                    const sparkModule = await import('@sparkjsdev/spark');
+                    console.log('[BIOME] Spark imported, keys:', Object.keys(sparkModule));
+                    const SplatMesh = sparkModule.SplatMesh;
+                    if (!SplatMesh) throw new Error('SplatMesh not found in Spark module');
+                    this._showBiomeToast('Parsing SPZ file...', '');
+                    console.log('[BIOME] creating SplatMesh...');
                     const splatMesh = new SplatMesh();
+                    console.log('[BIOME] calling loadFromFileBytes...');
                     await splatMesh.loadFromFileBytes(new Uint8Array(arrayBuffer), 'spz');
+                    console.log('[BIOME] SPZ parsed successfully');
                     const group = new THREE.Group();
                     group.add(splatMesh);
                     this._splatMesh = splatMesh;
                     this._applyBiomeSPZ(group);
                 } catch (err) {
                     console.error('[BIOME] SPZ load error:', err);
-                    this._showBiomeToast('Failed to load SPZ: ' + (err.message || err), 'error');
+                    this._showBiomeToast('Failed to load SPZ: ' + (err.message || String(err)), 'error');
                 }
             }
 
