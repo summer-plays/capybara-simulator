@@ -12594,6 +12594,7 @@
 
                 // Hat follows head bone as a prop (offset rotates with bone)
                 if (this.currentHatMesh && this._capyHeadBone && this._currentHatCfg) {
+                    this._capyHeadBone.updateWorldMatrix(true, false);
                     this._capyHeadBone.getWorldPosition(this._hatFollowPos);
                     this._capyHeadBone.getWorldQuaternion(this._hatFollowQuat);
                     const cfg = this._currentHatCfg;
