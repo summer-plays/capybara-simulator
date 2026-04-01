@@ -1978,9 +1978,9 @@
     <script type="module">
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
-        // SplatMesh loaded dynamically — Spark requires Three.js r178+, incompatible with our r160
 
         // Model actual sizes from inspection:
         // palm-trees: 25.91x5.28x5.24 (cluster of palms, huge)
@@ -10854,7 +10854,6 @@
 
                 fileInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
-                    alert('File: ' + (file ? file.name + ' (' + (file.size/1024/1024).toFixed(1) + 'MB)' : 'none'));
                     if (!file) return;
                     fileInput.value = '';
 
@@ -10871,15 +10870,16 @@
 
                     const reader = new FileReader();
                     reader.onload = (evt) => {
-                        alert('FileReader done, parsing GLB...');
                         const loader = new GLTFLoader();
+                        const dracoLoader = new DRACOLoader();
+                        dracoLoader.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+                        loader.setDRACOLoader(dracoLoader);
                         const parseTimeout = setTimeout(() => {
                             this._showBiomeToast('GLB parsing failed or timed out. The file may use unsupported features.', 'error');
                         }, 10000);
                         loader.parse(evt.target.result, '', (gltf) => {
                             clearTimeout(parseTimeout);
                             const result = this._validateBiomeGLB(gltf);
-                            alert('Validation: ' + (result.valid ? 'PASS' : result.reason));
                             if (!result.valid) {
                                 if (result.reason.includes('ground plane')) {
                                     this._showBiomeToast('No ground plane detected. Use the height slider to adjust.', 'error');
@@ -10892,7 +10892,6 @@
                             this._applyBiome(gltf.scene);
                         }, (err) => {
                             clearTimeout(parseTimeout);
-                            alert('GLB PARSE ERROR: ' + (err.message || err));
                             this._showBiomeToast('Failed to parse GLB: ' + (err.message || err), 'error');
                         });
                     };
