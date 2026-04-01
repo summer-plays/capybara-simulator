@@ -129,21 +129,31 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.92);
             color: #fff;
-            padding: 12px 24px;
-            border-radius: 12px;
+            padding: 16px 28px;
+            border-radius: 14px;
             font-family: 'Quicksand', sans-serif;
             font-size: 14px;
             font-weight: 600;
             z-index: 2000;
             display: none;
             text-align: center;
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
+            max-width: 400px;
+            line-height: 1.5;
         }
         #biome-toast.error { border-color: rgba(255,80,80,0.4); color: #ff8888; }
         #biome-toast.success { border-color: rgba(80,255,120,0.4); color: #88ff88; }
+        #biome-toast .dismiss {
+            display: block;
+            margin-top: 10px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+        }
+        #biome-toast .dismiss:hover { color: #fff; }
         #biome-slider-wrap {
             position: fixed;
             top: 100px;
@@ -10701,11 +10711,25 @@
 
             _showBiomeToast(msg, type) {
                 const el = document.getElementById('biome-toast');
-                el.textContent = msg;
+                el.innerHTML = '';
+                const text = document.createElement('div');
+                text.textContent = msg;
+                el.appendChild(text);
                 el.className = type || '';
                 el.style.display = '';
                 clearTimeout(this._biomeToastTimer);
-                this._biomeToastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+                if (type === 'error') {
+                    const dismiss = document.createElement('span');
+                    dismiss.className = 'dismiss';
+                    dismiss.textContent = 'tap to dismiss';
+                    dismiss.onclick = () => { el.style.display = 'none'; };
+                    el.appendChild(dismiss);
+                    el.onclick = () => { el.style.display = 'none'; };
+                } else if (type === 'success') {
+                    this._biomeToastTimer = setTimeout(() => { el.style.display = 'none'; }, 3000);
+                } else {
+                    // loading state — no auto-dismiss, no dismiss button
+                }
             }
 
             _validateBiomeGLB(gltf) {
