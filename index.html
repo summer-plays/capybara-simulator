@@ -165,10 +165,26 @@
             padding: 8px 12px;
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255,255,255,0.1);
+            width: 140px;
+        }
+        #biome-slider-toggle {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.85);
+            cursor: pointer;
+            text-align: center;
+            padding: 2px 0;
+        }
+        #biome-slider-panel {
             display: flex;
             flex-direction: column;
             gap: 4px;
-            width: 140px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #biome-slider-panel.collapsed {
+            display: none;
         }
         #biome-slider-wrap label {
             font-family: 'Quicksand', sans-serif;
@@ -176,12 +192,12 @@
             color: rgba(255,255,255,0.7);
             font-weight: 600;
         }
-        #biome-height, #biome-scale, #biome-x, #biome-z {
+        #biome-height, #biome-scale, #biome-x, #biome-z, #biome-rx, #biome-ry, #biome-rz {
             width: 100%;
             accent-color: #88ffaa;
             cursor: pointer;
         }
-        #biome-scale-num, #biome-height-num, #biome-x-num, #biome-z-num {
+        #biome-scale-num, #biome-height-num, #biome-x-num, #biome-z-num, #biome-rx-num, #biome-ry-num, #biome-rz-num {
             width: 50px;
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
@@ -1799,14 +1815,23 @@
     <input type="file" id="biome-collider-input" accept=".glb" style="display:none;">
     <div id="biome-toast"></div>
     <div id="biome-slider-wrap" style="display:none;">
-        <label>Scale: <input type="number" id="biome-scale-num" value="1" step="0.1" min="0.01"></label>
-        <input type="range" id="biome-scale" min="0.1" max="200" step="0.1" value="1">
-        <label>Y: <input type="number" id="biome-height-num" value="0" step="0.1"></label>
-        <input type="range" id="biome-height" min="-20" max="20" step="0.1" value="0">
-        <label>X: <input type="number" id="biome-x-num" value="0" step="0.1"></label>
-        <input type="range" id="biome-x" min="-20" max="20" step="0.1" value="0">
-        <label>Z: <input type="number" id="biome-z-num" value="0" step="0.1"></label>
-        <input type="range" id="biome-z" min="-20" max="20" step="0.1" value="0">
+        <div id="biome-slider-toggle">Adjust ▼</div>
+        <div id="biome-slider-panel">
+            <label>Scale: <input type="number" id="biome-scale-num" value="1" step="0.1" min="0.01"></label>
+            <input type="range" id="biome-scale" min="0.1" max="200" step="0.1" value="1">
+            <label>Y: <input type="number" id="biome-height-num" value="0" step="0.1"></label>
+            <input type="range" id="biome-height" min="-20" max="20" step="0.1" value="0">
+            <label>X: <input type="number" id="biome-x-num" value="0" step="0.1"></label>
+            <input type="range" id="biome-x" min="-20" max="20" step="0.1" value="0">
+            <label>Z: <input type="number" id="biome-z-num" value="0" step="0.1"></label>
+            <input type="range" id="biome-z" min="-20" max="20" step="0.1" value="0">
+            <label>Rot X: <input type="number" id="biome-rx-num" value="0" step="1"></label>
+            <input type="range" id="biome-rx" min="-180" max="180" step="1" value="0">
+            <label>Rot Y: <input type="number" id="biome-ry-num" value="0" step="1"></label>
+            <input type="range" id="biome-ry" min="-180" max="180" step="1" value="0">
+            <label>Rot Z: <input type="number" id="biome-rz-num" value="0" step="1"></label>
+            <input type="range" id="biome-rz" min="-180" max="180" step="1" value="0">
+        </div>
     </div>
     <button id="btn-collider" style="display:none;" title="Upload collider GLB for ground collision">Upload Collider</button>
     <div id="hud" style="display:none;">
@@ -10861,6 +10886,32 @@
                 zSlider.addEventListener('input', () => syncZ(parseFloat(zSlider.value)));
                 zNum.addEventListener('input', () => syncZ(parseFloat(zNum.value) || 0));
 
+                // Rotation sliders (degrees → radians)
+                const deg2rad = Math.PI / 180;
+                const makeRotSync = (axis) => {
+                    const sl = document.getElementById('biome-r' + axis);
+                    const nm = document.getElementById('biome-r' + axis + '-num');
+                    const sync = (val) => {
+                        sl.value = Math.min(Math.max(val, -180), 180);
+                        nm.value = val;
+                        if (this._uploadedBiome) this._uploadedBiome.rotation[axis] = val * deg2rad;
+                        if (this._biomeCollider) this._biomeCollider.rotation[axis] = val * deg2rad;
+                    };
+                    sl.addEventListener('input', () => sync(parseFloat(sl.value)));
+                    nm.addEventListener('input', () => sync(parseFloat(nm.value) || 0));
+                };
+                makeRotSync('x');
+                makeRotSync('y');
+                makeRotSync('z');
+
+                // Collapse toggle
+                const toggle = document.getElementById('biome-slider-toggle');
+                const panel = document.getElementById('biome-slider-panel');
+                toggle.addEventListener('click', () => {
+                    panel.classList.toggle('collapsed');
+                    toggle.textContent = panel.classList.contains('collapsed') ? 'Adjust ▶' : 'Adjust ▼';
+                });
+
                 const btn = document.getElementById('btn-biome');
                 const fileInput = document.getElementById('biome-file-input');
 
@@ -11064,6 +11115,10 @@
                 document.getElementById('biome-x-num').value = 0;
                 document.getElementById('biome-z').value = 0;
                 document.getElementById('biome-z-num').value = 0;
+                for (const a of ['rx', 'ry', 'rz']) {
+                    document.getElementById('biome-' + a).value = 0;
+                    document.getElementById('biome-' + a + '-num').value = 0;
+                }
                 this._biomeHeightOffset = 0;
                 this._biomeScale = 1;
 
