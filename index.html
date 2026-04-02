@@ -157,7 +157,7 @@
         #biome-toast .dismiss:hover { color: #fff; }
         #biome-slider-wrap {
             position: fixed;
-            top: 100px;
+            top: 115px;
             right: 16px;
             z-index: 1000;
             background: rgba(0,0,0,0.6);
@@ -180,8 +180,6 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            max-height: 300px;
-            overflow-y: auto;
         }
         #biome-slider-panel.collapsed {
             display: none;
@@ -10782,7 +10780,13 @@
                 let hasGroundPlane = false;
                 let textureTooLarge = null;
 
-                if (gltf.animations) gltf.animations = [];
+                // Keep animations — play them on the biome
+                if (gltf.animations && gltf.animations.length > 0) {
+                    this._biomeAnimMixer = new THREE.AnimationMixer(gltf.scene);
+                    for (const clip of gltf.animations) {
+                        this._biomeAnimMixer.clipAction(clip).play();
+                    }
+                }
 
                 const toRemove = [];
                 scene.traverse(c => {
@@ -11098,6 +11102,7 @@
                 this._uploadedBiome = null;
                 this._uploadedBiomeType = null;
                 this._showingUploadedBiome = false;
+                if (this._biomeAnimMixer) { this._biomeAnimMixer.stopAllAction(); this._biomeAnimMixer = null; }
                 this._biomeGroup.visible = true;
                 for (const fm of this._flowerInstancedMeshes) fm.visible = true;
                 this._settleCapybaraOnGround();
@@ -12634,6 +12639,8 @@
                 for (const fm of this._flowerInstancedMeshes) {
                     fm.material.userData.uniforms.windTime.value = time;
                 }
+
+                if (this._biomeAnimMixer) this._biomeAnimMixer.update(delta);
 
                 // Weather transitions
                 if (this._rainParticles) this._updateWeather(delta, time);
