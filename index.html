@@ -11088,27 +11088,14 @@
 
             _autoFitBiome(object3d) {
                 const box = new THREE.Box3().setFromObject(object3d);
-                const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
 
                 // Center on XZ
                 object3d.position.x -= center.x;
                 object3d.position.z -= center.z;
 
-                // Set bottom of scene at y=0
+                // Set bottom at y=0
                 object3d.position.y -= box.min.y;
-
-                // Scale to fit within 40x40 units on XZ
-                const maxExtent = Math.max(size.x, size.z);
-                if (maxExtent > 0) {
-                    const targetSize = 40;
-                    if (maxExtent > targetSize || maxExtent < 5) {
-                        const scale = targetSize / maxExtent;
-                        object3d.scale.multiplyScalar(scale);
-                        const newBox = new THREE.Box3().setFromObject(object3d);
-                        object3d.position.y -= newBox.min.y;
-                    }
-                }
 
                 if (this._dbg()) {
                     const finalBox = new THREE.Box3().setFromObject(object3d);
