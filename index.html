@@ -184,6 +184,32 @@
         #biome-slider-panel.collapsed {
             display: none;
         }
+        #biome-sky-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .sky-btn {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+        }
+        .sky-btn.active {
+            background: rgba(100,180,255,0.3);
+            border-color: rgba(100,180,255,0.5);
+            color: #fff;
+        }
+        #btn-sky-night.active {
+            background: rgba(60,40,120,0.5);
+            border-color: rgba(100,80,180,0.5);
+        }
         #biome-slider-wrap label {
             font-family: 'Quicksand', sans-serif;
             font-size: 11px;
@@ -1829,6 +1855,11 @@
             <input type="range" id="biome-ry" min="-180" max="180" step="1" value="0">
             <label>Rot Z: <input type="number" id="biome-rz-num" value="0" step="1"></label>
             <input type="range" id="biome-rz" min="-180" max="180" step="1" value="0">
+            <div id="biome-sky-toggle">
+                <label>Sky:</label>
+                <button id="btn-sky-day" class="sky-btn active">Day</button>
+                <button id="btn-sky-night" class="sky-btn">Night</button>
+            </div>
         </div>
     </div>
     <button id="btn-collider" style="display:none;" title="Upload collider GLB for ground collision">Upload Collider</button>
@@ -10907,6 +10938,55 @@
                 makeRotSync('x');
                 makeRotSync('y');
                 makeRotSync('z');
+
+                // Sky day/night toggle
+                const btnDay = document.getElementById('btn-sky-day');
+                const btnNight = document.getElementById('btn-sky-night');
+                this._nightMode = false;
+
+                this._daySkyTop = null;
+                this._daySkyBot = null;
+                this._dayFog = null;
+
+                const setDayNight = (night) => {
+                    this._nightMode = night;
+                    btnDay.classList.toggle('active', !night);
+                    btnNight.classList.toggle('active', night);
+
+                    // Save original day colors on first call
+                    if (!this._daySkyTop && this._sunnySkyTop) {
+                        this._daySkyTop = this._sunnySkyTop.clone();
+                        this._daySkyBot = this._sunnySkyBot.clone();
+                        this._dayFog = this._sunnyFog.clone();
+                    }
+
+                    if (night) {
+                        this._sunnySkyTop.set(0x050520);
+                        this._sunnySkyBot.set(0x0a0a30);
+                        this._sunnyFog.set(0x080818);
+                        this._skyMat.uniforms.topColor.value.set(0x050520);
+                        this._skyMat.uniforms.bottomColor.value.set(0x0a0a30);
+                        this.scene.fog.color.set(0x080818);
+                        this.scene.fog.density = 0.020;
+                        if (this._sun) this._sun.intensity = 0.15;
+                        if (this._hemi) this._hemi.intensity = 0.2;
+                        if (this._ambient) this._ambient.intensity = 0.3;
+                    } else if (this._daySkyTop) {
+                        this._sunnySkyTop.copy(this._daySkyTop);
+                        this._sunnySkyBot.copy(this._daySkyBot);
+                        this._sunnyFog.copy(this._dayFog);
+                        this._skyMat.uniforms.topColor.value.copy(this._daySkyTop);
+                        this._skyMat.uniforms.bottomColor.value.copy(this._daySkyBot);
+                        this.scene.fog.color.copy(this._dayFog);
+                        this.scene.fog.density = 0.014;
+                        if (this._sun) this._sun.intensity = 1.2;
+                        if (this._hemi) this._hemi.intensity = 0.6;
+                        if (this._ambient) this._ambient.intensity = 0.4;
+                    }
+                };
+
+                btnDay.addEventListener('click', () => setDayNight(false));
+                btnNight.addEventListener('click', () => setDayNight(true));
 
                 // Collapse toggle
                 const toggle = document.getElementById('biome-slider-toggle');
