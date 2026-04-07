@@ -1909,7 +1909,7 @@
             <button id="btn-rain" title="Toggle rain"><svg viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><line x1="8" y1="16" x2="8" y2="20"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="16" y1="16" x2="16" y2="20"/></svg></button>
         </div>
     </div>
-    <button id="btn-biome" style="display:none;" title="Upload Biome">Upload Biome</button>
+    <button id="btn-biome" style="display:none;" title="Test a biome locally">Test Biome</button>
     <input type="file" id="biome-file-input" style="display:none;">
     <input type="file" id="biome-collider-input" accept=".glb" style="display:none;">
     <div id="biome-toast"></div>
@@ -1933,7 +1933,7 @@
         </div>
     </div>
     <button id="btn-collider" style="display:none;" title="Upload collider GLB for ground collision">Upload Collider</button>
-    <button id="btn-submit-biome" style="display:none;" title="Submit your biome">Submit Biome</button>
+    <button id="btn-submit-biome" style="display:none;" title="Winner biome upload">Winner Upload</button>
     <div id="submit-dialog" style="display:none;">
         <div id="submit-dialog-inner">
             <div id="submit-dialog-title">Submit Your Biome</div>
@@ -11303,7 +11303,7 @@
                 this._settleCapybaraOnGround();
 
                 const btn = document.getElementById('btn-biome');
-                btn.textContent = 'Upload Biome';
+                btn.textContent = 'Test Biome';
                 btn.classList.remove('loaded');
 
                 document.getElementById('biome-slider-wrap').style.display = 'none';
