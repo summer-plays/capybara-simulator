@@ -225,6 +225,107 @@
         }
         #btn-collider:hover { background: rgba(255,255,255,0.15); }
         #btn-collider.loaded { color: #88ff88; border-color: rgba(80,255,120,0.3); }
+        #btn-submit-biome {
+            position: fixed;
+            top: 75px;
+            right: 140px;
+            z-index: 1000;
+            pointer-events: all;
+            font-family: 'Quicksand', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            color: #ffd700;
+            background: rgba(255,200,0,0.15);
+            border: 1px solid rgba(255,200,0,0.3);
+            border-radius: 16px;
+            padding: 5px 12px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+        }
+        #btn-submit-biome:hover { background: rgba(255,200,0,0.25); }
+        #submit-dialog {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #submit-dialog-inner {
+            background: rgba(20,20,30,0.95);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px;
+            padding: 24px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+        }
+        #submit-dialog-title {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffd700;
+            text-align: center;
+        }
+        #submit-dialog-desc {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+        }
+        #submit-code-input {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        #submit-choose-file, #submit-send, #submit-cancel {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 8px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        #submit-choose-file {
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.8);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        #submit-send {
+            background: rgba(255,200,0,0.3);
+            color: #ffd700;
+            border: 1px solid rgba(255,200,0,0.4);
+        }
+        #submit-send:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        #submit-cancel {
+            background: transparent;
+            color: rgba(255,255,255,0.5);
+        }
+        #submit-file-name {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+        }
+        #submit-status {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 12px;
+            text-align: center;
+            min-height: 16px;
+        }
 
         /* ── ACTION BUTTONS (bottom bar) ── */
         #action-buttons {
@@ -1832,6 +1933,20 @@
         </div>
     </div>
     <button id="btn-collider" style="display:none;" title="Upload collider GLB for ground collision">Upload Collider</button>
+    <button id="btn-submit-biome" style="display:none;" title="Submit your biome">Submit Biome</button>
+    <div id="submit-dialog" style="display:none;">
+        <div id="submit-dialog-inner">
+            <div id="submit-dialog-title">Submit Your Biome</div>
+            <div id="submit-dialog-desc">Enter your submission code to upload your biome GLB.</div>
+            <input type="text" id="submit-code-input" placeholder="Submission code" autocomplete="off">
+            <input type="file" id="submit-file-input" accept=".glb" style="display:none;">
+            <button id="submit-choose-file">Choose GLB File</button>
+            <div id="submit-file-name"></div>
+            <button id="submit-send" disabled>Submit</button>
+            <button id="submit-cancel">Cancel</button>
+            <div id="submit-status"></div>
+        </div>
+    </div>
     <div id="hud" style="display:none;">
         </div>
     </div>
@@ -10532,6 +10647,7 @@
                 document.getElementById('hud').style.display = 'flex';
                 document.getElementById('persistent-hud').style.display = 'flex';
                 document.getElementById('btn-biome').style.display = '';
+                document.getElementById('btn-submit-biome').style.display = '';
                 this.setupPoints();
                 this.setupBiomeSwap();
                 this.setupWeather();
@@ -11022,6 +11138,85 @@
                         });
                     };
                     reader.readAsArrayBuffer(file);
+                });
+
+                // Submit biome dialog
+                const submitBtn = document.getElementById('btn-submit-biome');
+                const submitDialog = document.getElementById('submit-dialog');
+                const submitCode = document.getElementById('submit-code-input');
+                const submitFileInput = document.getElementById('submit-file-input');
+                const submitChoose = document.getElementById('submit-choose-file');
+                const submitSend = document.getElementById('submit-send');
+                const submitCancel = document.getElementById('submit-cancel');
+                const submitFileName = document.getElementById('submit-file-name');
+                const submitStatus = document.getElementById('submit-status');
+                let submitFile = null;
+
+                submitBtn.addEventListener('click', () => {
+                    submitDialog.style.display = 'flex';
+                    submitCode.value = '';
+                    submitFile = null;
+                    submitFileInput.value = '';
+                    submitFileName.textContent = '';
+                    submitSend.disabled = true;
+                    submitStatus.textContent = '';
+                    submitStatus.style.color = '';
+                });
+
+                submitCancel.addEventListener('click', () => {
+                    submitDialog.style.display = 'none';
+                });
+
+                submitChoose.addEventListener('click', () => {
+                    submitFileInput.click();
+                });
+
+                submitFileInput.addEventListener('change', (e) => {
+                    submitFile = e.target.files[0] || null;
+                    if (submitFile) {
+                        submitFileName.textContent = submitFile.name + ' (' + (submitFile.size / 1024 / 1024).toFixed(1) + 'MB)';
+                        submitSend.disabled = !submitCode.value.trim();
+                    } else {
+                        submitFileName.textContent = '';
+                        submitSend.disabled = true;
+                    }
+                });
+
+                submitCode.addEventListener('input', () => {
+                    submitSend.disabled = !(submitCode.value.trim() && submitFile);
+                });
+
+                submitSend.addEventListener('click', async () => {
+                    if (!submitFile || !submitCode.value.trim()) return;
+                    submitSend.disabled = true;
+                    submitStatus.textContent = 'Uploading...';
+                    submitStatus.style.color = '#ffd700';
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('biome', submitFile);
+
+                        const resp = await fetch('/api/submit-biome', {
+                            method: 'POST',
+                            headers: { 'x-submit-code': submitCode.value.trim() },
+                            body: formData
+                        });
+                        const data = await resp.json();
+
+                        if (data.success) {
+                            submitStatus.textContent = 'Submitted! (' + data.remaining + ' submissions remaining)';
+                            submitStatus.style.color = '#88ff88';
+                            setTimeout(() => { submitDialog.style.display = 'none'; }, 3000);
+                        } else {
+                            submitStatus.textContent = data.error || 'Submission failed';
+                            submitStatus.style.color = '#ff8888';
+                            submitSend.disabled = false;
+                        }
+                    } catch (err) {
+                        submitStatus.textContent = 'Network error: ' + err.message;
+                        submitStatus.style.color = '#ff8888';
+                        submitSend.disabled = false;
+                    }
                 });
             }
 
