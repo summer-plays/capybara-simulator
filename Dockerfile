@@ -1,6 +1,7 @@
 FROM node:18-alpine
-RUN npm install -g serve
 WORKDIR /app
+COPY package*.json ./
+RUN npm install --production
 COPY . .
 EXPOSE 3000
-CMD ["sh", "-c", "serve -s . -l ${PORT:-3000}"]
+CMD ["node", "server.js"]
