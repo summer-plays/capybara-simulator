@@ -33,3 +33,4 @@ npm-debug.log*
 *.tmp
 *.bak
 submissions/
+models/biomes/SUBMIT_CODE_*
