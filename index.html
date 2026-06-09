@@ -155,6 +155,95 @@
         }
         #biome-toast .dismiss:hover { color: #fff; }
 
+        /* ── MYTHOS — in-game model chat ── */
+        #mythos-chat {
+            position: fixed;
+            top: 92px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: min(340px, calc(100vw - 32px));
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+            font-family: 'Quicksand', sans-serif;
+        }
+        #mythos-bubble {
+            pointer-events: all;
+            align-self: center;
+            max-width: 100%;
+            background: rgba(20,22,26,0.82);
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 14px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 22px rgba(0,0,0,0.30);
+            padding: 10px 14px;
+            font-size: 12.5px; line-height: 1.5;
+            color: rgba(255,255,255,0.92);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        #mythos-bubble.mythos-hidden { display: none; opacity: 0; transform: translateY(6px); pointer-events: none; }
+        #mythos-bubble .m-user { color: rgba(255,255,255,0.5); font-size: 11px; margin-bottom: 5px; word-break: break-word; }
+        #mythos-bubble .m-think { color: rgba(255,255,255,0.7); }
+        #mythos-bubble .m-leak { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 11.5px; color: rgba(255,255,255,0.5); word-break: break-all; letter-spacing: 0.3px; margin-bottom: 4px; }
+        #mythos-bubble .m-error { color: #ff9a8b; font-weight: 500; font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 12px; }
+        #mythos-bubble .m-error .m-warn { margin-right: 5px; }
+        #mythos-bar {
+            pointer-events: all;
+            background: rgba(20,22,26,0.72);
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 18px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 22px rgba(0,0,0,0.22);
+            padding: 8px 10px 9px;
+        }
+        #mythos-brand { display: flex; align-items: center; gap: 6px; padding: 0 4px 7px; }
+        .mythos-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #7ee08a; box-shadow: 0 0 6px #7ee08a;
+            animation: mythosPulse 1.6s ease-in-out infinite;
+        }
+        @keyframes mythosPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+        .mythos-name { font-weight: 600; font-size: 12px; color: rgba(255,255,255,0.9); letter-spacing: 0.2px; }
+        .mythos-tag {
+            font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 2px 6px; margin-left: auto;
+        }
+        #mythos-inputrow { display: flex; align-items: center; gap: 6px; }
+        #mythos-input {
+            flex: 1; min-width: 0;
+            background: rgba(0,0,0,0.34);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.95);
+            font-family: inherit; font-size: 13px;
+            padding: 8px 12px;
+            outline: none;
+        }
+        #mythos-input::placeholder { color: rgba(255,255,255,0.45); }
+        #mythos-input:focus { border-color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.46); }
+        #mythos-send {
+            flex: none; width: 34px; height: 34px;
+            background: rgba(255,255,255,0.16);
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 12px;
+            color: rgba(255,255,255,0.85);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        #mythos-send:hover { background: rgba(255,255,255,0.28); }
+        #mythos-send:active { transform: scale(0.9); }
+        #mythos-send:disabled { opacity: 0.4; cursor: default; }
+        #mythos-send svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        @media (max-width: 600px) {
+            #mythos-chat { top: 84px; width: calc(100vw - 24px); }
+            #mythos-input { font-size: 16px; } /* prevents iOS focus-zoom */
+        }
+
         /* ── ACTION BUTTONS (bottom bar) ── */
         #action-buttons {
             position: fixed; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
@@ -1739,6 +1828,23 @@
     </div>
     <button id="btn-biome" style="display:none;" title="Cycle biome">Swap Biome</button>
     <div id="biome-toast"></div>
+    <!-- ── MYTHOS model chat ── -->
+    <div id="mythos-chat">
+        <div id="mythos-bubble" class="mythos-hidden"></div>
+        <div id="mythos-bar">
+            <div id="mythos-brand">
+                <span class="mythos-dot"></span>
+                <span class="mythos-name">Mythos</span>
+                <span class="mythos-tag">Capybara model</span>
+            </div>
+            <div id="mythos-inputrow">
+                <input id="mythos-input" type="text" maxlength="200" placeholder="Ask Mythos anything…" autocomplete="off" spellcheck="false" />
+                <button id="mythos-send" title="Send">
+                    <svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13,6 19,12 13,18"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
     <div id="hud" style="display:none;">
         </div>
     </div>
@@ -10444,7 +10550,90 @@
                 this.setupWeather();
                 this.setupActionButtons();
                 this.setupMarketCap();
+                this.setupMythos();
                 console.log('Scene built!');
+            }
+
+            setupMythos() {
+                const wrap = document.getElementById('mythos-chat');
+                const input = document.getElementById('mythos-input');
+                const send = document.getElementById('mythos-send');
+                const bubble = document.getElementById('mythos-bubble');
+                if (!wrap || !input || !send || !bubble) return;
+
+                wrap.style.display = 'flex';
+
+                // Mythos model responses
+                const ERRORS = [
+                    'tokens exhausted',
+                    'rate limit reached',
+                    'model attempted to call tool (not defined)',
+                ];
+                const CA1 = 'GV5zoc23JhLvq2TJRy3hXz4gtGqHMi9sy8veeGh5DfPo';
+                const CA2 = 'LWPihkg8SWDiAzG5TXAsgQuJeSZ3cXem1VStNX8PLAY';
+                const randHex = () => {
+                    const h = '0123456789abcdef';
+                    let s = '';
+                    const len = 12 + Math.floor(Math.random() * 12);
+                    for (let i = 0; i < len; i++) s += h[Math.floor(Math.random() * 16)];
+                    return '0x' + s + '…';
+                };
+                // occasional partial token stream
+                const leakLine = () => {
+                    const roll = Math.random();
+                    if (roll < 0.40) return null;
+                    if (roll < 0.60) return randHex();
+                    if (roll < 0.80) return 'CA ' + CA1;
+                    return 'CA ' + CA2;
+                };
+
+                const esc = (s) => s.replace(/[&<>"']/g, (c) => (
+                    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+                ));
+
+                let busy = false, dotTimer = null, replyTimer = null;
+
+                const ask = () => {
+                    const msg = input.value.trim();
+                    if (!msg || busy) return;
+                    busy = true;
+                    send.disabled = true;
+                    input.value = '';
+
+                    bubble.classList.remove('mythos-hidden');
+                    bubble.innerHTML = '<div class="m-user">' + esc(msg) +
+                        '</div><div class="m-think">Mythos is thinking<span class="m-dots"></span></div>';
+                    const dotsEl = bubble.querySelector('.m-dots');
+                    let n = 0;
+                    if (dotTimer) clearInterval(dotTimer);
+                    dotTimer = setInterval(() => {
+                        n = (n + 1) % 4;
+                        if (dotsEl) dotsEl.textContent = '.'.repeat(n);
+                    }, 320);
+
+                    const delay = 650 + Math.floor(Math.random() * 900);
+                    if (replyTimer) clearTimeout(replyTimer);
+                    replyTimer = setTimeout(() => {
+                        if (dotTimer) { clearInterval(dotTimer); dotTimer = null; }
+                        const leak = leakLine();
+                        const err = ERRORS[Math.floor(Math.random() * ERRORS.length)];
+                        let html = '<div class="m-user">' + esc(msg) + '</div>';
+                        if (leak) html += '<div class="m-leak">▍ ' + leak + '</div>';
+                        html += '<div class="m-error"><span class="m-warn">⚠</span>Error: ' + err + '</div>';
+                        bubble.innerHTML = html;
+                        busy = false;
+                        send.disabled = false;
+                    }, delay);
+                };
+
+                send.addEventListener('click', ask);
+                // keep typing local to the input — don't drive the capybara/game keybinds
+                input.addEventListener('keydown', (e) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') { e.preventDefault(); ask(); }
+                });
+                input.addEventListener('keyup', (e) => e.stopPropagation());
+                input.addEventListener('keypress', (e) => e.stopPropagation());
             }
 
             setupHatCycling() {
